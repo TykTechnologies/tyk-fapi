@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "tyk-docs-search": {
+      "autoApprove": [
+        "search_tyk_docs"
+      ],
+      "disabled": false,
+      "timeout": 60,
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tyk-technologies/docs-mcp@latest"
+      ],
+      "transportType": "stdio"
+    }
+  }
+}
