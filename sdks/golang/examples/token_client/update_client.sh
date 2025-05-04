@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Instructions for manually updating the client configuration in Keycloak
+
+echo "Please follow these steps to update the client configuration in Keycloak:"
+echo ""
+echo "1. Log in to the Keycloak Admin Console at http://localhost:8081/admin/"
+echo "   Username: admin"
+echo "   Password: admin"
+echo ""
+echo "2. Select the 'fapi-demo' realm from the dropdown in the top-left corner"
+echo ""
+echo "3. Go to 'Clients' in the left menu"
+echo ""
+echo "4. Click on the 'my-tpp' client in the list"
+echo ""
+echo "5. Go to the 'Advanced' tab"
+echo ""
+echo "6. Set the following values:"
+echo "   - JWKS URL: http://host.docker.internal:8082/.well-known/jwks.json"
+echo "   - Token Endpoint Auth Signing Algorithm: ES256"
+echo ""
+echo "7. Click 'Save'"
+echo ""
+echo "8. Now run the token client example:"
+echo "   ./token_client"
+echo ""
