@@ -1,115 +1,49 @@
-# Tyk gRPC Plugin for FAPI with DPoP
+# Tyk FAPI Accelerator
 
-This is a gRPC plugin for Tyk API Gateway that implements DPoP (Demonstrating Proof of Possession) authentication for FAPI (Financial-grade API) compliance.
+This repository serves as an industry accelerator for implementing Financial-grade API (FAPI) and Demonstrating Proof of Possession (DPoP) with Tyk API Gateway.
 
-## Features
+## Repository Structure
 
-- Pre-auth hook: Checks for the existence of Authorization and DPoP headers, and rewrites `Authorization: DPoP <token>` to `Authorization: Bearer <token>` for compatibility with Tyk's JWT middleware.
-- Post-auth hook: Validates the DPoP proof and claims, including audience validation and DPoP fingerprint verification.
+This is a monorepo containing multiple sub-applications and components:
 
-## Requirements
+- **plugins/**: Gateway plugins for Tyk
+  - **tyk-grpc-plugin/**: gRPC plugin implementing DPoP authentication for FAPI compliance
+  
+- **authorization-servers/**: Configurations for FAPI-compliant authorization servers
+  - **keycloak/**: Keycloak setup with FAPI 2.0 and DPoP support
+  
+- **sdks/**: Client SDKs for different languages with examples
+  - **java/**: Java SDK and examples
+  - **python/**: Python SDK and examples
+  - **nodejs/**: Node.js SDK and examples
+  
+- **tools/**: Compliance testing and utility tools
+  - **compliance-tester/**: FAPI compliance testing tool
+  - **jwt-debugger/**: JWT debugging tool
+  
+- **dashboard/**: UI dashboard component for monitoring and managing FAPI implementations
+  
+- **docs/**: Documentation
+  - **architecture/**: Architecture documentation
+  - **tutorials/**: Tutorials
+  - **specs/**: Specifications
 
+## Getting Started
+
+### Prerequisites
+
+- Go 1.24 or higher
 - Tyk API Gateway
-- Docker (for building and running the plugin)
+- Docker (for building and running the plugins)
 
-## Building and Running
+### Building and Running the gRPC Plugin
 
-### Using Docker
+See the [plugins/tyk-grpc-plugin/README.md](plugins/tyk-grpc-plugin/README.md) for instructions on building and running the gRPC plugin.
 
-1. Build the Docker image:
-   ```
-   docker build -t tyk-grpc-plugin-fapi .
-   ```
+### Setting Up an Authorization Server
 
-2. Run the container:
-   ```
-   docker run -p 5555:5555 tyk-grpc-plugin-fapi
-   ```
+See the [authorization-servers/README.md](authorization-servers/README.md) for instructions on setting up a FAPI-compliant authorization server for testing.
 
-### Manual Build
+## Contributing
 
-1. Install Protocol Buffers compiler:
-   ```
-   # macOS
-   brew install protobuf
-
-   # Ubuntu
-   apt-get install -y protobuf-compiler
-   ```
-
-2. Install Go protobuf plugins:
-   ```
-   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
-   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
-   ```
-
-3. Generate protobuf code:
-   ```
-   mkdir -p proto/gen/proto
-   protoc --go_out=proto/gen/proto --go_opt=paths=source_relative \
-          --go-grpc_out=proto/gen/proto --go-grpc_opt=paths=source_relative \
-          proto/coprocess.proto
-   ```
-
-4. Build the plugin:
-   ```
-   go build -o tyk-grpc-plugin-fapi
-   ```
-
-5. Run the plugin:
-   ```
-   ./tyk-grpc-plugin-fapi
-   ```
-
-## Configuring Tyk
-
-1. Update your Tyk configuration file (`tyk.conf`) to enable gRPC plugins:
-   ```json
-   {
-     "coprocess_options": {
-       "enable_coprocess": true,
-       "coprocess_grpc_server": "tcp://localhost:5555"
-     }
-   }
-   ```
-
-2. Configure your API definition to use the gRPC plugin:
-   ```json
-   {
-     "name": "My FAPI API",
-     "use_keyless": false,
-     "jwt_signing_method": "rsa",
-     "jwt_source": "https://your-jwks-url",
-     "jwt_identity_base_field": "sub",
-     "jwt_policy_field_name": "pol",
-     "custom_middleware": {
-       "pre": [
-         {
-           "name": "PreAuthCheck"
-         }
-       ],
-       "post_key_auth": [
-         {
-           "name": "PostKeyAuth"
-         }
-       ],
-       "driver": "grpc"
-     }
-   }
-   ```
-
-## How It Works
-
-1. **Pre-auth hook**:
-   - Checks for the existence of Authorization and DPoP headers
-   - If Authorization header is `DPoP <token>`, rewrites it to `Bearer <token>`
-   - Rejects requests with missing or invalid headers
-
-2. **Tyk JWT middleware**:
-   - Validates the JWT token (signature, expiration, etc.)
-
-3. **Post-auth hook**:
-   - Validates the audience claim in the token
-   - Extracts the DPoP fingerprint (jkt) from the token
-   - Validates the DPoP proof against the fingerprint
-   - Removes the DPoP header before forwarding the request upstream
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
