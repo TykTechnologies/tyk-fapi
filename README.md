@@ -113,7 +113,3 @@ This is a gRPC plugin for Tyk API Gateway that implements DPoP (Demonstrating Pr
    - Extracts the DPoP fingerprint (jkt) from the token
    - Validates the DPoP proof against the fingerprint
    - Removes the DPoP header before forwarding the request upstream
-
-## License
-
-MIT

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 
 	pb "github.com/TykTechnologies/tyk-grpc-plugin-fapi/proto/gen"
@@ -83,9 +84,8 @@ func (d *DPoPHandler) PreAuthCheck(object *pb.Object) (*pb.Object, error) {
 
 	// Check if Authorization header starts with DPoP
 	if strings.HasPrefix(authHeader, "DPoP ") {
-		// Rewrite DPoP token to Bearer token
 		token := strings.TrimPrefix(authHeader, "DPoP ")
-		object.Request.Headers["Authorization"] = "Bearer " + token
+		object.Request.SetHeaders["Authorization"] = "Bearer " + token
 		log.Info("Rewrote DPoP token to Bearer token")
 	} else if !strings.HasPrefix(authHeader, "Bearer ") {
 		log.Error("Authorization header must start with DPoP or Bearer")
@@ -161,8 +161,37 @@ func (d *DPoPHandler) PostKeyAuth(object *pb.Object) (*pb.Object, error) {
 		return d.respondWithError(object, err.Error(), http.StatusUnauthorized)
 	}
 
-	// Remove the DPoP header and token from the request before forwarding
-	delete(object.Request.Headers, "DPoP")
+	// Create a new SetHeaders map or update existing one
+	if object.Request.SetHeaders == nil {
+		object.Request.SetHeaders = map[string]string{}
+	}
+
+	// Add the X-Foo header
+	object.Request.SetHeaders["X-Foo"] = "Bar"
+	log.Info("Added X-Foo: Bar header using SetHeaders in PostKeyAuth")
+
+	// Add DPoP and Authorization to DeleteHeaders
+	if object.Request.DeleteHeaders == nil {
+		object.Request.DeleteHeaders = []string{}
+	}
+	object.Request.DeleteHeaders = append(object.Request.DeleteHeaders, "DPoP", "Authorization")
+	log.Info("Added DPoP and Authorization to DeleteHeaders")
+
+	// Print all headers after modification for debugging
+	log.Info("Headers in PostKeyAuth after modification:")
+	for k, v := range object.Request.Headers {
+		log.Infof("  %s: %s", k, v)
+	}
+
+	log.Info("SetHeaders in PostKeyAuth:")
+	for k, v := range object.Request.SetHeaders {
+		log.Infof("  %s: %s", k, v)
+	}
+
+	log.Info("DeleteHeaders in PostKeyAuth:")
+	for _, v := range object.Request.DeleteHeaders {
+		log.Infof("  %s", v)
+	}
 
 	log.Info("DPoP validation successful")
 	return object, nil
@@ -211,7 +240,7 @@ func (d *DPoPHandler) validateAudienceClaim(claims jwt.MapClaims) error {
 }
 
 // validateDPoPProof validates the DPoP proof
-func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, url string) error {
+func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, requestURL string) error {
 	// Parse the DPoP proof
 	token, _, err := new(jwt.Parser).ParseUnverified(dpopProof, jwt.MapClaims{})
 	if err != nil {
@@ -233,8 +262,22 @@ func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, url stri
 
 	// Check htu (HTTP URL)
 	htu, ok := claims["htu"].(string)
-	if !ok || !strings.Contains(url, htu) {
-		return fmt.Errorf("invalid htu claim: URL %s does not contain %v", url, claims["htu"])
+	if !ok {
+		return fmt.Errorf("missing htu claim")
+	}
+
+	// Extract the path from the URL
+	urlPath := requestURL
+	if strings.Contains(requestURL, "://") {
+		parsedURL, parseErr := url.Parse(requestURL)
+		if parseErr == nil {
+			urlPath = parsedURL.Path
+		}
+	}
+
+	// Compare the path part only
+	if htu != urlPath {
+		return fmt.Errorf("invalid htu claim: expected %s, got %s", urlPath, htu)
 	}
 
 	// Check jti (JWT ID) - should be unique
