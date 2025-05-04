@@ -1,0 +1,109 @@
+{
+  "profiles": [
+    {
+      "name": "fapi-2-security-profile",
+      "description": "FAPI 2.0 Security Profile",
+      "executors": [
+        {
+          "executor": "secure-session",
+          "configuration": {}
+        },
+        {
+          "executor": "secure-client-authenticator",
+          "configuration": {
+            "client-authenticator-type": [
+              "client-jwt",
+              "client-secret-jwt",
+              "client-x509"
+            ],
+            "client-authns-augment": false
+          }
+        },
+        {
+          "executor": "secure-client-uris",
+          "configuration": {}
+        },
+        {
+          "executor": "consent-required",
+          "configuration": {}
+        },
+        {
+          "executor": "full-scope-disabled",
+          "configuration": {}
+        },
+        {
+          "executor": "pkce-enforcer",
+          "configuration": {
+            "auto-configure": true,
+            "augment": false
+          }
+        },
+        {
+          "executor": "secure-request-object",
+          "configuration": {
+            "available-period": "3600",
+            "verify-nbf": true
+          }
+        },
+        {
+          "executor": "secure-response-type",
+          "configuration": {
+            "allow-token-response-type": false,
+            "allow-id-token-response-type": false,
+            "allow-id-token-token-response-type": false
+          }
+        },
+        {
+          "executor": "secure-signature-algorithm",
+          "configuration": {
+            "default-algorithm": "ES256",
+            "allowed-algorithm": [
+              "ES256",
+              "ES384",
+              "ES512",
+              "PS256",
+              "PS384",
+              "PS512"
+            ]
+          }
+        },
+        {
+          "executor": "secure-signature-algorithm-signed-jwt",
+          "configuration": {
+            "default-algorithm": "ES256",
+            "allowed-algorithm": [
+              "ES256",
+              "ES384",
+              "ES512",
+              "PS256",
+              "PS384",
+              "PS512"
+            ]
+          }
+        },
+        {
+          "executor": "dpop-bind-enforcer",
+          "configuration": {
+            "token-type": "dpop"
+          }
+        }
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "name": "fapi-2-security-policy",
+      "description": "FAPI 2.0 Security Policy",
+      "enabled": true,
+      "conditions": [
+        {
+          "condition": "any-client",
+          "configuration": {}
+        }
+      ],
+      "profiles": [
+        "fapi-2-security-profile"
+      ]
+    }
+  ]
+}

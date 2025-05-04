@@ -1,0 +1,107 @@
+{
+  "realm": "fapi-demo",
+  "enabled": true,
+  "displayName": "FAPI 2.0 Demo Realm",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "defaultSignatureAlgorithm": "ES256",
+  "attributes": {
+    "pkce.code.challenge.method": "S256",
+    "require.pushed.authorization.requests": "false",
+    "client-policies.profiles.global.enabled": "true"
+  },
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "frame-src self; frame-ancestors self; object-src none;",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "clientPolicies": {
+    "policies": [
+      {
+        "name": "fapi-2-security-policy",
+        "description": "FAPI 2.0 Security Policy",
+        "enabled": true,
+        "conditions": [
+          {
+            "condition": "any-client",
+            "configuration": {}
+          }
+        ],
+        "profiles": [
+          "fapi-2-security-profile"
+        ]
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "my-tpp",
+      "name": "FAPI 2.0 Confidential Client",
+      "description": "Client for testing FAPI 2.0 compliance with client credentials flow",
+      "enabled": true,
+      "clientAuthenticatorType": "client-jwt",
+      "redirectUris": ["http://localhost:3000/callback"],
+      "webOrigins": ["http://localhost:3000"],
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.signed.response.alg": "ES256",
+        "id.token.signed.response.alg": "ES256",
+        "access.token.lifespan": "300",
+        "dpop.bound.access.tokens": "required"
+      }
+    },
+    {
+      "clientId": "my-tpp-public",
+      "name": "FAPI 2.0 Public Client",
+      "description": "Client for testing FAPI 2.0 compliance with authorization code + PKCE flow",
+      "enabled": true,
+      "redirectUris": ["http://localhost:3000/callback"],
+      "webOrigins": ["http://localhost:3000"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.signed.response.alg": "ES256",
+        "id.token.signed.response.alg": "ES256",
+        "access.token.lifespan": "300",
+        "pkce.code.challenge.method": "S256",
+        "dpop.bound.access.tokens": "required"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "test-user",
+      "email": "test@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

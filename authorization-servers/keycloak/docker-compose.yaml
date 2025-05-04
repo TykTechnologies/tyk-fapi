@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev --http-port=8081
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_FEATURES: dpop
+#      JAVA_OPTS_APPEND: "-Dkeycloak.security.allow-insecure-jwks-url=true"
+    ports:
+      - "8081:8081"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
+volumes:
+  keycloak_data:
