@@ -103,8 +103,3 @@ The client can be configured with various options:
 See the [examples](./examples) directory for complete examples:
 
 - [Client Credentials](./examples/client_credentials): Example of using the client credentials flow
-- [Token Client](./examples/token_client): Example of a token client that obtains and uses access tokens
-
-## License
-
-This SDK is licensed under the [MIT License](LICENSE).

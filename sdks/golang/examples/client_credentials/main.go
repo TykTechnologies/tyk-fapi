@@ -63,10 +63,23 @@ func main() {
 	}
 
 	fmt.Println("Token claims:")
-	fmt.Printf("  Subject: %v\n", claims["sub"])
-	fmt.Printf("  Issuer: %v\n", claims["iss"])
-	fmt.Printf("  Expiration: %v\n", claims["exp"])
-	fmt.Printf("  Confirmation: %v\n", claims["cnf"])
+	// Log all claims in the token
+	fmt.Println("All token claims:")
+	for key, value := range claims {
+		fmt.Printf("  %s: %v\n", key, value)
+	}
+
+	// Check specifically for audience claim
+	if aud, ok := claims["aud"]; ok {
+		fmt.Printf("  Audience claim found: %v (type: %T)\n", aud, aud)
+	} else {
+		fmt.Println("  WARNING: No audience (aud) claim found in the token!")
+	}
+
+	// Check for azp claim as an alternative
+	if azp, ok := claims["azp"]; ok {
+		fmt.Printf("  Authorized party (azp) claim found: %v (type: %T)\n", azp, azp)
+	}
 
 	// Make an API call to the payments endpoint
 	fmt.Println("\nMaking API call to /payments/get...")
@@ -75,7 +88,7 @@ func main() {
 	httpClient := fapiClient.Client()
 
 	// Make a GET request
-	resp, err := httpClient.Get(tykGatewayURL + "/payments/get")
+	resp, err := httpClient.Get(tykGatewayURL + "/payments/anything")
 	if err != nil {
 		log.Fatalf("API call failed: %v", err)
 	}
@@ -96,7 +109,7 @@ func main() {
 	requestBody := strings.NewReader(`{"amount": 100, "currency": "USD"}`)
 
 	// Make a POST request
-	resp, err = httpClient.Post(tykGatewayURL+"/payments/create", "application/json", requestBody)
+	resp, err = httpClient.Post(tykGatewayURL+"/payments/anything", "application/json", requestBody)
 	if err != nil {
 		log.Fatalf("API call failed: %v", err)
 	}
