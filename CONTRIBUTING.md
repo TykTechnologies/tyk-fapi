@@ -61,7 +61,3 @@ For working with multiple components simultaneously, use the go.work file at the
 - Write clear, descriptive commit messages
 - Include tests for new functionality
 - Update documentation as needed
-
-## License
-
-By contributing to this project, you agree that your contributions will be licensed under the project's MIT License.

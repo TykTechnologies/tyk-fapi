@@ -2,6 +2,16 @@
 
 This directory contains configurations for various authorization servers that can be used to test the Tyk FAPI implementation. Each subdirectory contains a specific authorization server setup with instructions on how to use it.
 
+## Using with Tyk FAPI
+
+Each authorization server is configured to work with the Tyk FAPI implementation. The general steps to use them are:
+
+1. Start the authorization server using the provided configuration
+2. Configure the Tyk API definition to use the authorization server as the JWT source
+3. Use a FAPI-compliant client to obtain tokens and make requests to the API via Tyk Gateway
+
+For specific instructions, refer to the README.md file in each authorization server's directory.
+
 ## Available Authorization Servers
 
 ### Keycloak
@@ -23,13 +33,3 @@ In the future, we plan to add support for other popular identity providers:
 - Okta
 - ForgeRock
 - Ping Identity
-
-## Using with Tyk FAPI
-
-Each authorization server is configured to work with the Tyk FAPI implementation. The general steps to use them are:
-
-1. Start the authorization server using the provided configuration
-2. Configure the Tyk API definition to use the authorization server as the JWT source
-3. Use a FAPI-compliant client to obtain tokens and make requests to the API via Tyk Gateway
-
-For specific instructions, refer to the README.md file in each authorization server's directory.
