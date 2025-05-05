@@ -1,0 +1,57 @@
+components:
+  securitySchemes:
+    jwtAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+info:
+  title: payments
+  version: 1.0.0
+openapi: 3.0.3
+paths: {}
+security:
+  - jwtAuth: []
+servers:
+  - url: http://gateway.ahmet:8080/payments/
+x-tyk-api-gateway:
+  info:
+    dbId: 6817cdff6877c28ac82ce427
+    id: da994cd802c54616682bb063c5e9d5a5
+    name: payments
+    orgId: 6817cda76877c28ac82ce425
+    state:
+      active: true
+  middleware:
+    global:
+      contextVariables:
+        enabled: true
+      pluginConfig:
+        driver: grpc
+      prePlugins:
+        - enabled: true
+          functionName: DPoPCheck
+          path: ''
+      trafficLogs:
+        enabled: true
+  server:
+    authentication:
+      enabled: true
+      securitySchemes:
+        jwtAuth:
+          defaultPolicies:
+            - 6817ce356877c28ac82ce428
+          enabled: true
+          header:
+            enabled: true
+            name: Authorization
+          identityBaseField: sub
+          policyFieldName: pol
+          signingMethod: ecdsa
+          source: >-
+            aHR0cDovL2xvY2FsaG9zdDo4MDgxL3JlYWxtcy9mYXBpLWRlbW8vcHJvdG9jb2wvb3BlbmlkLWNvbm5lY3QvY2VydHM=
+      stripAuthorizationData: true
+    listenPath:
+      strip: true
+      value: /payments/
+  upstream:
+    url: https://httpbin.org/

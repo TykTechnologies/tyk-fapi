@@ -4,8 +4,12 @@ This is a gRPC plugin for Tyk API Gateway that implements DPoP (Demonstrating Pr
 
 ## Features
 
-- Pre-auth hook: Checks for the existence of Authorization and DPoP headers, and rewrites `Authorization: DPoP <token>` to `Authorization: Bearer <token>` for compatibility with Tyk's JWT middleware.
-- Post-auth hook: Validates the DPoP proof and claims, including audience validation and DPoP fingerprint verification.
+- Single DPoP validation hook: Validates DPoP proof and claims in a single step, including:
+  - Checking for the existence of Authorization and DPoP headers
+  - Rewriting `Authorization: DPoP <token>` to `Authorization: Bearer <token>` for compatibility with Tyk's JWT middleware
+  - Extracting the DPoP fingerprint (jkt) from the token
+  - Validating the DPoP proof against the fingerprint
+  - Removing the DPoP header before forwarding the request upstream
 
 ## Requirements
 
@@ -74,42 +78,32 @@ This is a gRPC plugin for Tyk API Gateway that implements DPoP (Demonstrating Pr
    ```
 
 2. Configure your API definition to use the gRPC plugin:
-   ```json
-   {
-     "name": "My FAPI API",
-     "use_keyless": false,
-     "jwt_signing_method": "rsa",
-     "jwt_source": "https://your-jwks-url",
-     "jwt_identity_base_field": "sub",
-     "jwt_policy_field_name": "pol",
-     "custom_middleware": {
-       "pre": [
-         {
-           "name": "PreAuthCheck"
-         }
-       ],
-       "post_key_auth": [
-         {
-           "name": "PostKeyAuth"
-         }
-       ],
-       "driver": "grpc"
-     }
-   }
-   ```
+```yaml
+  middleware:
+    global:
+      contextVariables:
+        enabled: true
+      pluginConfig:
+       driver: grpc
+      prePlugins:
+      - enabled: true
+        functionName: DPoPCheck
+        path: ''
+      trafficLogs:
+       enabled: true
+```
 
 ## How It Works
 
-1. **Pre-auth hook**:
+1. **DPoP validation hook (pre-auth)**:
    - Checks for the existence of Authorization and DPoP headers
    - If Authorization header is `DPoP <token>`, rewrites it to `Bearer <token>`
-   - Rejects requests with missing or invalid headers
+   - Parses the access token
+   - Extracts the DPoP fingerprint (jkt) from the token
+   - Validates the DPoP proof against the fingerprint
+   - Removes the DPoP header before forwarding the request
+   - Rejects requests with missing or invalid headers/tokens
 
 2. **Tyk JWT middleware**:
    - Validates the JWT token (signature, expiration, etc.)
-
-3. **Post-auth hook**:
-   - Validates the audience claim in the token
-   - Extracts the DPoP fingerprint (jkt) from the token
-   - Validates the DPoP proof against the fingerprint
-   - Removes the DPoP header before forwarding the request upstream
+   - Processes the request based on the JWT claims

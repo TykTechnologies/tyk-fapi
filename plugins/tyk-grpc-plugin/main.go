@@ -34,10 +34,8 @@ type DPoPHandler struct {
 // Dispatch handles the gRPC request from Tyk
 func (d *DPoPHandler) Dispatch(ctx context.Context, object *pb.Object) (*pb.Object, error) {
 	switch object.HookName {
-	case "PreAuthCheck":
-		return d.PreAuthCheck(object)
-	case "PostKeyAuth":
-		return d.PostKeyAuth(object)
+	case "DPoPCheck":
+		return d.DPoPCheck(object)
 	default:
 		log.Warnf("Unknown hook: %s", object.HookName)
 		return object, nil
@@ -50,11 +48,10 @@ func (d *DPoPHandler) DispatchEvent(ctx context.Context, event *pb.Event) (*pb.E
 	return &pb.EventReply{}, nil
 }
 
-// PreAuthCheck implements the pre-auth hook
-// It checks for the existence of Authorization and DPoP headers
-// If Authorization header is DPoP, it rewrites it to Bearer
-func (d *DPoPHandler) PreAuthCheck(object *pb.Object) (*pb.Object, error) {
-	log.Info("Running PreAuthCheck hook")
+// DPoPCheck implements the pre-auth hook
+// It validates DPoP proof and claims
+func (d *DPoPHandler) DPoPCheck(object *pb.Object) (*pb.Object, error) {
+	log.Info("Running DPoPCheck hook")
 
 	// Print all headers for debugging
 	log.Info("Received headers:")
@@ -83,51 +80,21 @@ func (d *DPoPHandler) PreAuthCheck(object *pb.Object) (*pb.Object, error) {
 	}
 
 	// Check if Authorization header starts with DPoP
+	var token string
 	if strings.HasPrefix(authHeader, "DPoP ") {
-		token := strings.TrimPrefix(authHeader, "DPoP ")
+		token = strings.TrimPrefix(authHeader, "DPoP ")
+		// Initialize SetHeaders map if nil
+		if object.Request.SetHeaders == nil {
+			object.Request.SetHeaders = map[string]string{}
+		}
 		object.Request.SetHeaders["Authorization"] = "Bearer " + token
 		log.Info("Rewrote DPoP token to Bearer token")
-	} else if !strings.HasPrefix(authHeader, "Bearer ") {
+	} else if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	} else {
 		log.Error("Authorization header must start with DPoP or Bearer")
 		return d.respondWithError(object, "Invalid Authorization header format", http.StatusUnauthorized)
 	}
-
-	return object, nil
-}
-
-// PostKeyAuth implements the post-auth hook
-// It validates the DPoP proof and claims
-func (d *DPoPHandler) PostKeyAuth(object *pb.Object) (*pb.Object, error) {
-	log.Info("Running PostKeyAuth hook")
-
-	// Print all headers for debugging
-	log.Info("Received headers:")
-	for k, v := range object.Request.Headers {
-		log.Infof("  %s: %s", k, v)
-	}
-
-	// Get Authorization header
-	authHeader := object.Request.Headers["Authorization"]
-	if authHeader == "" {
-		log.Error("Authorization header is missing")
-		return d.respondWithError(object, "Authorization header is required", http.StatusUnauthorized)
-	}
-
-	// Get DPoP header - try different cases
-	dpopHeader := object.Request.Headers["DPoP"]
-	if dpopHeader == "" {
-		dpopHeader = object.Request.Headers["dpop"]
-	}
-	if dpopHeader == "" {
-		dpopHeader = object.Request.Headers["Dpop"]
-	}
-	if dpopHeader == "" {
-		log.Error("DPoP header is missing")
-		return d.respondWithError(object, "DPoP header is required", http.StatusUnauthorized)
-	}
-
-	// Extract token from Authorization header
-	token := strings.TrimPrefix(authHeader, "Bearer ")
 
 	// Parse and validate the access token
 	accessTokenClaims, err := d.parseAndValidateAccessToken(token)
@@ -136,10 +103,10 @@ func (d *DPoPHandler) PostKeyAuth(object *pb.Object) (*pb.Object, error) {
 		return d.respondWithError(object, "Invalid access token", http.StatusUnauthorized)
 	}
 
-	// Validate audience claim
-	if err := d.validateAudienceClaim(accessTokenClaims); err != nil {
-		log.Errorf("Audience validation failed: %v", err)
-		return d.respondWithError(object, err.Error(), http.StatusUnauthorized)
+	// Log all claims for debugging
+	log.Info("Access token claims:")
+	for k, v := range accessTokenClaims {
+		log.Infof("  %s: %v", k, v)
 	}
 
 	// Get the DPoP fingerprint from the access token
@@ -161,37 +128,12 @@ func (d *DPoPHandler) PostKeyAuth(object *pb.Object) (*pb.Object, error) {
 		return d.respondWithError(object, err.Error(), http.StatusUnauthorized)
 	}
 
-	// Create a new SetHeaders map or update existing one
-	if object.Request.SetHeaders == nil {
-		object.Request.SetHeaders = map[string]string{}
-	}
-
-	// Add the X-Foo header
-	object.Request.SetHeaders["X-Foo"] = "Bar"
-	log.Info("Added X-Foo: Bar header using SetHeaders in PostKeyAuth")
-
-	// Add DPoP and Authorization to DeleteHeaders
+	// Delete the DPoP header
 	if object.Request.DeleteHeaders == nil {
 		object.Request.DeleteHeaders = []string{}
 	}
-	object.Request.DeleteHeaders = append(object.Request.DeleteHeaders, "DPoP", "Authorization")
-	log.Info("Added DPoP and Authorization to DeleteHeaders")
-
-	// Print all headers after modification for debugging
-	log.Info("Headers in PostKeyAuth after modification:")
-	for k, v := range object.Request.Headers {
-		log.Infof("  %s: %s", k, v)
-	}
-
-	log.Info("SetHeaders in PostKeyAuth:")
-	for k, v := range object.Request.SetHeaders {
-		log.Infof("  %s: %s", k, v)
-	}
-
-	log.Info("DeleteHeaders in PostKeyAuth:")
-	for _, v := range object.Request.DeleteHeaders {
-		log.Infof("  %s", v)
-	}
+	object.Request.DeleteHeaders = append(object.Request.DeleteHeaders, "DPoP")
+	log.Info("Added DPoP to DeleteHeaders")
 
 	log.Info("DPoP validation successful")
 	return object, nil
@@ -210,33 +152,6 @@ func (d *DPoPHandler) parseAndValidateAccessToken(tokenString string) (jwt.MapCl
 	}
 
 	return claims, nil
-}
-
-// validateAudienceClaim validates the audience claim in the access token
-func (d *DPoPHandler) validateAudienceClaim(claims jwt.MapClaims) error {
-	// Get the audience claim
-	aud, ok := claims["aud"]
-	if !ok {
-		return errors.New("missing audience claim")
-	}
-
-	// Check if audience is a string or an array
-	switch v := aud.(type) {
-	case string:
-		// For simplicity, we're just checking if it's not empty
-		if v == "" {
-			return errors.New("empty audience claim")
-		}
-	case []interface{}:
-		// For an array, check if it's not empty
-		if len(v) == 0 {
-			return errors.New("empty audience claim array")
-		}
-	default:
-		return errors.New("invalid audience claim format")
-	}
-
-	return nil
 }
 
 // validateDPoPProof validates the DPoP proof
