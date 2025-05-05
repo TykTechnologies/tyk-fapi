@@ -16,17 +16,10 @@ This is a monorepo containing multiple sub-applications and components:
   - **java/**: Java SDK and examples
   - **python/**: Python SDK and examples
   - **nodejs/**: Node.js SDK and examples
-  
-- **tools/**: Compliance testing and utility tools
-  - **compliance-tester/**: FAPI compliance testing tool
-  - **jwt-debugger/**: JWT debugging tool
-  
-- **dashboard/**: UI dashboard component for monitoring and managing FAPI implementations
-  
+
 - **docs/**: Documentation
-  - **architecture/**: Architecture documentation
-  - **tutorials/**: Tutorials
-  - **specs/**: Specifications
+  - **tutorials/**: Tutorials (COMING SOON)
+  - **specs/**: Specifications (COMING SOON)
 
 ## Getting Started
 
