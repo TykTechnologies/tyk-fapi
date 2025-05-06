@@ -17,11 +17,12 @@ This is a monorepo containing multiple sub-applications and components:
   - **python/**: Python SDK and examples
   - **nodejs/**: Node.js SDK and examples
 
-- **bank/**: Open Banking specifications and reference implementations
+- **specs/**: Open Banking specifications and reference implementations
   - **uk-open-banking/**: UK Open Banking Read/Write API specifications
 
 - **tyk-bank/**: Mock bank implementation for testing FAPI compliance
   - Implements UK Open Banking Account Information API
+  - Supports Docker containerization with microservices architecture
   - Extensible for multiple countries' Open Banking standards
 
 - **docs/**: Documentation
