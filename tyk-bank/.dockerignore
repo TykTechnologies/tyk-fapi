@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build output
+dist
+
+# Version control
+.git
+.gitignore
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+.nyc_output
+tests
+
+# Docker files (not needed in the build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md

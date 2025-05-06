@@ -1,0 +1,3 @@
+[submodule "bank/uk-open-banking/read-write-api-specs"]
+	path = bank/uk-open-banking/read-write-api-specs
+	url = git@github.com:OpenBankingUK/read-write-api-specs.git
