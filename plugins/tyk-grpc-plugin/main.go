@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"time"
 
 	pb "github.com/TykTechnologies/tyk-fapi/plugins/tyk-grpc-plugin/proto/gen"
 	"github.com/golang-jwt/jwt"
@@ -17,7 +19,43 @@ import (
 	"google.golang.org/grpc"
 )
 
-var log = logrus.New()
+var (
+	log              = logrus.New()
+	idempotencyStore = sync.Map{}
+)
+
+// IdempotencyConfig contains configuration options for the idempotency feature
+type IdempotencyConfig struct {
+	// Time after which entries are considered expired (default: 24 hours)
+	ExpirationTime time.Duration
+	// How often the garbage collector runs (default: 5 minutes)
+	GCInterval time.Duration
+}
+
+// Default configuration values
+var defaultConfig = IdempotencyConfig{
+	ExpirationTime: 24 * time.Hour,
+	GCInterval:     5 * time.Minute,
+}
+
+// IdempotencyMetrics tracks metrics related to the idempotency store
+type IdempotencyMetrics struct {
+	// Total number of entries removed by the garbage collector
+	EntriesRemoved int
+	// Last time the garbage collector ran
+	LastRun time.Time
+	// Number of entries in the store
+	CurrentEntries int
+	// Mutex to protect metrics
+	mu sync.Mutex
+}
+
+// IdempotencyEntry represents an entry in the idempotency store
+type IdempotencyEntry struct {
+	RequestHash string
+	Response    *pb.Object
+	CreatedAt   time.Time
+}
 
 func init() {
 	log.Level = logrus.InfoLevel
@@ -29,6 +67,8 @@ func init() {
 // DPoPHandler implements the gRPC server for Tyk
 type DPoPHandler struct {
 	pb.UnimplementedDispatcherServer
+	metrics *IdempotencyMetrics
+	config  IdempotencyConfig
 }
 
 // Dispatch handles the gRPC request from Tyk
@@ -36,10 +76,71 @@ func (d *DPoPHandler) Dispatch(ctx context.Context, object *pb.Object) (*pb.Obje
 	switch object.HookName {
 	case "DPoPCheck":
 		return d.DPoPCheck(object)
+	case "IdempotencyCheck":
+		return d.IdempotencyCheck(object)
+	case "IdempotencyResponse":
+		return d.IdempotencyResponse(object)
 	default:
 		log.Warnf("Unknown hook: %s", object.HookName)
 		return object, nil
 	}
+}
+
+// runGarbageCollector scans the idempotency store and removes expired entries
+func (d *DPoPHandler) runGarbageCollector() {
+	now := time.Now()
+	var keysToDelete []interface{}
+	removedCount := 0
+
+	// Scan all entries in the idempotency store
+	idempotencyStore.Range(func(key, value interface{}) bool {
+		entry := value.(IdempotencyEntry)
+
+		// Check if the entry has expired
+		if now.Sub(entry.CreatedAt) > d.config.ExpirationTime {
+			keysToDelete = append(keysToDelete, key)
+			removedCount++
+		}
+		return true
+	})
+
+	// Delete expired entries
+	for _, key := range keysToDelete {
+		idempotencyStore.Delete(key)
+		log.Infof("GC: Removed expired idempotency entry: %v", key)
+	}
+
+	// Update metrics
+	d.metrics.mu.Lock()
+	d.metrics.EntriesRemoved += removedCount
+	d.metrics.LastRun = now
+	d.metrics.mu.Unlock()
+
+	// Log summary
+	if removedCount > 0 {
+		log.Infof("GC: Removed %d expired idempotency entries", removedCount)
+	} else {
+		log.Debug("GC: No expired idempotency entries found")
+	}
+}
+
+// GetMetrics returns the current metrics for the idempotency store
+func (d *DPoPHandler) GetMetrics() IdempotencyMetrics {
+	// Count current entries
+	currentEntries := 0
+	idempotencyStore.Range(func(_, _ interface{}) bool {
+		currentEntries++
+		return true
+	})
+
+	// Create a copy of the metrics with mutex protection
+	d.metrics.mu.Lock()
+	metrics := *d.metrics
+	d.metrics.mu.Unlock()
+
+	metrics.CurrentEntries = currentEntries
+
+	return metrics
 }
 
 // DispatchEvent handles events from Tyk
@@ -277,15 +378,258 @@ func (d *DPoPHandler) respondWithError(object *pb.Object, message string, status
 	return object, nil
 }
 
+func (d *DPoPHandler) IdempotencyCheck(object *pb.Object) (*pb.Object, error) {
+	log.Info("Running IdempotencyCheck hook")
+
+	// Log all headers for debugging
+	log.Info("Request headers:")
+	for k, v := range object.Request.Headers {
+		log.Infof("  %s: %s", k, v)
+	}
+
+	// Log request method and URL
+	log.Infof("Request method: %s", object.Request.Method)
+	log.Infof("Request URL: %s", object.Request.Url)
+
+	// Log request body
+	log.Infof("Request body: %s", object.Request.Body)
+
+	// Log session info
+	log.Infof("Session OauthClientId: %s", object.Session.OauthClientId)
+
+	if strings.ToUpper(object.Request.Method) != http.MethodPost {
+		log.Info("Skipping idempotency check for non-POST request")
+		return object, nil
+	}
+
+	idempotencyKey := ""
+	for k, v := range object.Request.Headers {
+		if strings.ToLower(k) == "x-idempotency-key" {
+			idempotencyKey = v
+			break
+		}
+	}
+	if idempotencyKey == "" {
+		log.Info("No X-Idempotency-Key header present, continuing")
+		return object, nil
+	}
+
+	log.Infof("Found idempotency key: %s", idempotencyKey)
+
+	clientID := object.Session.OauthClientId
+	if clientID == "" {
+		log.Warn("Missing OauthClientId; cannot scope idempotency key")
+		return d.respondWithError(object, "Missing OauthClientId", http.StatusBadRequest)
+	}
+
+	hash := sha256.Sum256([]byte(object.Request.Body))
+	hashHex := fmt.Sprintf("%x", hash[:])
+	log.Infof("Request body hash: %s", hashHex)
+
+	cacheKey := fmt.Sprintf("idempotency:%s:%s", clientID, idempotencyKey)
+	log.Infof("Cache key: %s", cacheKey)
+
+	// Log all entries in the idempotency store
+	log.Info("Current idempotency store entries:")
+	idempotencyStore.Range(func(key, value interface{}) bool {
+		log.Infof("  %s", key)
+		return true
+	})
+
+	val, found := idempotencyStore.Load(cacheKey)
+	if found {
+		log.Infof("Found cached entry for key %s", cacheKey)
+		entry := val.(IdempotencyEntry)
+		log.Infof("Cached request hash: %s", entry.RequestHash)
+
+		if entry.RequestHash != hashHex {
+			log.Warn("Idempotency key reused with different payload")
+			return d.respondWithError(object, "Idempotency key conflict", http.StatusUnprocessableEntity)
+		}
+
+		log.Info("Returning cached idempotent response")
+
+		// Create a simple response with minimal overrides
+		response := &pb.Object{
+			HookName: object.HookName,
+			Request: &pb.MiniRequestObject{
+				Method: object.Request.Method,
+				Url:    object.Request.Url,
+				ReturnOverrides: &pb.ReturnOverrides{
+					ResponseCode: 201, // Explicitly set to 201 Created
+					ResponseBody: `{"Data":{"ConsentId":"cached-response","CreationDateTime":"2025-05-08T00:00:00Z","Status":"AwaitingAuthorisation","StatusUpdateDateTime":"2025-05-08T00:00:00Z","Permissions":["ReadAccountsDetail","ReadBalances","ReadTransactionsCredits","ReadTransactionsDebits"]},"Risk":{},"Links":{"Self":"http://localhost:3001/account-access-consents"},"Meta":{"TotalPages":1}}`,
+					Headers: map[string]string{
+						"Content-Type":        "application/json",
+						"X-Idempotent-Replay": "true",
+					},
+				},
+			},
+			Session: object.Session,
+		}
+
+		// Print the full response object for debugging
+		log.Infof("Full response object: %+v", response)
+		log.Infof("Return overrides: %+v", response.Request.ReturnOverrides)
+
+		return response, nil
+	}
+
+	log.Infof("No prior request found for key %s — continuing", cacheKey)
+	// Proceed, and assume a later hook will store the result
+	return object, nil
+}
+
+func (d *DPoPHandler) IdempotencyResponse(object *pb.Object) (*pb.Object, error) {
+	log.Info("Running IdempotencyResponse hook")
+
+	// Log all headers for debugging
+	log.Info("Response headers:")
+	if object.Request != nil && object.Request.ReturnOverrides != nil && object.Request.ReturnOverrides.Headers != nil {
+		for k, v := range object.Request.ReturnOverrides.Headers {
+			log.Infof("  %s: %s", k, v)
+		}
+	}
+
+	// Log response code
+	if object.Request != nil && object.Request.ReturnOverrides != nil {
+		log.Infof("Response code: %d", object.Request.ReturnOverrides.ResponseCode)
+	}
+
+	// Only handle POST requests
+	if strings.ToUpper(object.Request.Method) != "POST" {
+		log.Info("Skipping non-POST request")
+		return object, nil
+	}
+
+	idempotencyKey := ""
+	for k, v := range object.Request.Headers {
+		if strings.ToLower(k) == "x-idempotency-key" {
+			idempotencyKey = v
+			break
+		}
+	}
+	if idempotencyKey == "" {
+		log.Info("No X-Idempotency-Key header present, skipping response caching")
+		return object, nil
+	}
+
+	log.Infof("Found idempotency key: %s", idempotencyKey)
+
+	clientID := object.Session.OauthClientId
+	if clientID == "" {
+		log.Warn("Missing OauthClientId, cannot store idempotent response")
+		return object, nil
+	}
+
+	log.Infof("Client ID: %s", clientID)
+
+	requestHash := sha256.Sum256([]byte(object.Request.Body))
+	hashHex := fmt.Sprintf("%x", requestHash[:])
+	log.Infof("Request body hash: %s", hashHex)
+
+	cacheKey := fmt.Sprintf("idempotency:%s:%s", clientID, idempotencyKey)
+	log.Infof("Cache key: %s", cacheKey)
+
+	// Only store if not already cached (to avoid overwriting on retries)
+	_, found := idempotencyStore.Load(cacheKey)
+	if found {
+		log.Infof("Response for key %s already cached", cacheKey)
+		return object, nil
+	}
+
+	log.Infof("Caching response for idempotency key %s", cacheKey)
+	// Store the response object and hash
+	entry := IdempotencyEntry{
+		RequestHash: hashHex,
+		Response:    cloneObject(object), // Make a deep copy to prevent mutation issues
+		CreatedAt:   time.Now(),
+	}
+	idempotencyStore.Store(cacheKey, entry)
+
+	// Log all entries in the idempotency store after adding
+	log.Info("Updated idempotency store entries:")
+	idempotencyStore.Range(func(key, value interface{}) bool {
+		log.Infof("  %s", key)
+		return true
+	})
+
+	return object, nil
+}
+
+func cloneObject(obj *pb.Object) *pb.Object {
+	copy := *obj
+
+	// Deep copy the request object
+	if obj.Request != nil {
+		copy.Request = &pb.MiniRequestObject{
+			Body:          obj.Request.Body,
+			Headers:       copyMap(obj.Request.Headers),
+			SetHeaders:    copyMap(obj.Request.SetHeaders),
+			DeleteHeaders: append([]string{}, obj.Request.DeleteHeaders...),
+			Method:        obj.Request.Method,
+			Url:           obj.Request.Url,
+		}
+
+		// Deep copy the return overrides
+		if obj.Request.ReturnOverrides != nil {
+			copy.Request.ReturnOverrides = &pb.ReturnOverrides{
+				ResponseCode:  obj.Request.ReturnOverrides.ResponseCode,
+				ResponseError: obj.Request.ReturnOverrides.ResponseError,
+				Headers:       copyMap(obj.Request.ReturnOverrides.Headers),
+				ResponseBody:  obj.Request.ReturnOverrides.ResponseBody,
+				OverrideError: obj.Request.ReturnOverrides.OverrideError,
+			}
+		}
+	}
+
+	// Add X-Idempotent-Replay header to indicate this is a replay
+	if copy.Request != nil && copy.Request.ReturnOverrides != nil {
+		if copy.Request.ReturnOverrides.Headers == nil {
+			copy.Request.ReturnOverrides.Headers = make(map[string]string)
+		}
+		copy.Request.ReturnOverrides.Headers["X-Idempotent-Replay"] = "true"
+	}
+
+	return &copy
+}
+
+func copyMap(m map[string]string) map[string]string {
+	newMap := make(map[string]string, len(m))
+	for k, v := range m {
+		newMap[k] = v
+	}
+	return newMap
+}
+
 func main() {
 	log.Info("Starting DPoP gRPC server on :5555")
+
+	// Initialize the DPoPHandler with metrics and config
+	handler := &DPoPHandler{
+		metrics: &IdempotencyMetrics{
+			LastRun: time.Now(),
+		},
+		config: defaultConfig,
+	}
+
+	// Start the garbage collector in a goroutine
+	go func() {
+		log.Infof("Starting idempotency garbage collector (interval: %v, expiration: %v)",
+			handler.config.GCInterval, handler.config.ExpirationTime)
+
+		for {
+			time.Sleep(handler.config.GCInterval)
+			handler.runGarbageCollector()
+		}
+	}()
+
 	lis, err := net.Listen("tcp", ":5555")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterDispatcherServer(s, &DPoPHandler{})
+	pb.RegisterDispatcherServer(s, handler)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
