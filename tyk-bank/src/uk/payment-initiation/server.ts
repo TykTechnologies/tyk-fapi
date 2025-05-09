@@ -1,14 +1,12 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import accountsRoutes from './routes/accounts';
 import consentsRoutes from './routes/consents';
-import { getBalances } from './controllers/balances';
-import { getTransactions } from './controllers/transactions';
+import paymentsRoutes from './routes/payments';
 
 // Create Express app
 const app = express();
-const PORT = process.env.PORT || 3001; // Changed to 3001
+const PORT = process.env.PORT || 3002; // Using 3002 for payment-initiation API
 
 // Middleware
 app.use(cors());
@@ -34,25 +32,22 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // API routes
-app.use('/account-access-consents', consentsRoutes);
-app.use('/accounts', accountsRoutes);
-app.get('/balances', getBalances);
-app.get('/transactions', getTransactions);
+app.use('/domestic-payment-consents', consentsRoutes);
+app.use('/domestic-payments', paymentsRoutes);
 
 // Root endpoint with API information
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
-    name: 'Tyk Bank - Open Banking Mock Implementation - UK Account Information API',
+    name: 'Tyk Bank - Open Banking Mock Implementation - UK Payment Initiation API',
     version: '1.0.0',
-    description: 'Mock implementation of the UK Open Banking Account Information API',
+    description: 'Mock implementation of the UK Open Banking Payment Initiation API',
     endpoints: [
-      '/account-access-consents',
-      '/accounts',
-      '/accounts/{accountId}',
-      '/accounts/{accountId}/balances',
-      '/accounts/{accountId}/transactions',
-      '/balances',
-      '/transactions'
+      '/domestic-payment-consents',
+      '/domestic-payment-consents/{ConsentId}',
+      '/domestic-payment-consents/{ConsentId}/funds-confirmation',
+      '/domestic-payments',
+      '/domestic-payments/{DomesticPaymentId}',
+      '/domestic-payments/{DomesticPaymentId}/payment-details'
     ]
   });
 });
@@ -75,9 +70,11 @@ app.use((req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Tyk Bank Open Banking - UK Account Information API running on port ${PORT}`);
-  console.log(`Server URL: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Tyk Bank Open Banking - UK Payment Initiation API running on port ${PORT}`);
+    console.log(`Server URL: http://localhost:${PORT}`);
+  });
+}
 
 export default app;

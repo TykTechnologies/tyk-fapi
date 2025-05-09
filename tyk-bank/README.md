@@ -8,9 +8,10 @@ This project provides a mock implementation of Open Banking APIs from multiple c
 
 **Currently Implemented:**
 - UK Open Banking Account Information API
+- UK Open Banking Payment Initiation API (Domestic Payments only)
 
 **Planned for Future:**
-- UK Open Banking Payment Initiation API
+- UK Open Banking Payment Initiation API (Additional payment types)
 - Brazil Open Banking APIs
 - Additional country implementations
 
@@ -19,6 +20,8 @@ The mock bank provides endpoints for:
 - Account Balances
 - Account Transactions
 - Account Access Consents
+- Domestic Payment Consents
+- Domestic Payments
 
 ## Project Structure
 
@@ -30,7 +33,7 @@ tyk-bank/
 │   ├── common/                      # Shared utilities and types
 │   ├── uk/                          # UK Open Banking
 │   │   ├── account-information/     # Account Information API
-│   │   └── payment-initiation/      # Payment Initiation API (future)
+│   │   └── payment-initiation/      # Payment Initiation API
 │   └── brazil/                      # Brazil Open Banking (future)
 └── tests/                           # Test files
 ```
@@ -65,16 +68,33 @@ tyk-bank/
 
 #### Using Node.js
 
-Start the server:
+Start the Account Information API server:
 ```
-npm start
+npm run start:account
 ```
 
-The server will start on port 3001 by default. You can change this by setting the `PORT` environment variable.
+Start the Payment Initiation API server:
+```
+npm run start:payment
+```
+
+Start both servers concurrently:
+```
+npm run dev:all
+```
+
+The Account Information API will start on port 3001 and the Payment Initiation API on port 3002 by default. You can change this by setting the `PORT` environment variable.
 
 For development with auto-reload:
 ```
-npm run dev
+# Account Information API
+npm run dev:account
+
+# Payment Initiation API
+npm run dev:payment
+
+# Both APIs concurrently
+npm run dev:all
 ```
 
 #### Using Docker
@@ -115,9 +135,10 @@ The project is structured as a collection of microservices, each representing a 
 - Provides account information, balances, and transactions
 - Manages account access consents
 
-#### Payment Initiation API (Port 3002, future)
-- Will handle payment initiation requests
-- Will manage payment consents
+#### Payment Initiation API (Port 3002)
+- Handles domestic payment initiation requests
+- Manages domestic payment consents
+- Provides funds confirmation
 
 ### Brazil Open Banking (future)
 
@@ -141,13 +162,24 @@ The project is structured as a collection of microservices, each representing a 
 - `GET /balances` - Get all balances
 - `GET /transactions` - Get all transactions
 
+### UK Open Banking - Payment Initiation
+
+- `POST /domestic-payment-consents` - Create a new domestic payment consent
+- `GET /domestic-payment-consents/{ConsentId}` - Get domestic payment consent details
+- `GET /domestic-payment-consents/{ConsentId}/funds-confirmation` - Check funds availability
+- `POST /domestic-payments` - Create a new domestic payment
+- `GET /domestic-payments/{DomesticPaymentId}` - Get domestic payment details
+- `GET /domestic-payments/{DomesticPaymentId}/payment-details` - Get additional payment details
+
 ## Mock Data
 
 The mock bank comes pre-populated with sample data:
 - 5 accounts (current, savings, credit card, business, and euro accounts)
 - Balances for each account
 - Transactions for each account
-- Sample consents
+- Sample account access consents
+- Sample domestic payment consents
+- Sample domestic payments
 
 ## Security
 
