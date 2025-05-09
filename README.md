@@ -22,6 +22,7 @@ This is a monorepo containing multiple sub-applications and components:
 
 - **tyk-bank/**: Mock bank implementation for testing FAPI compliance
   - Implements UK Open Banking Account Information API
+  - Implements UK Open Banking Payment Initiation API (Domestic Payments)
   - Supports Docker containerization with microservices architecture
   - Extensible for multiple countries' Open Banking standards
 
@@ -50,10 +51,17 @@ See the [authorization-servers/README.md](authorization-servers/README.md) for i
 
 See the [tyk-bank/README.md](tyk-bank/README.md) for instructions on running the mock bank implementation. The mock bank provides endpoints for:
 
+**Account Information API:**
 - Account Information
 - Account Balances
 - Account Transactions
 - Account Access Consents
+
+**Payment Initiation API:**
+- Domestic Payment Consents
+- Domestic Payments
+- Funds Confirmation
+- Payment Details
 
 It can be run directly with Node.js or using Docker containers.
 
