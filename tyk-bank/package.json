@@ -5,8 +5,13 @@
   "main": "dist/uk/account-information/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/uk/account-information/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/uk/account-information/server.ts",
+    "start:account": "node dist/uk/account-information/server.js",
+    "start:payment": "node dist/uk/payment-initiation/server.js",
+    "start": "npm run start:account",
+    "dev:account": "ts-node-dev --respawn --transpile-only src/uk/account-information/server.ts",
+    "dev:payment": "ts-node-dev --respawn --transpile-only src/uk/payment-initiation/server.ts",
+    "dev": "npm run dev:account",
+    "dev:all": "concurrently \"npm run dev:account\" \"npm run dev:payment\"",
     "test": "jest",
     "lint": "eslint . --ext .ts"
   },
@@ -38,6 +43,7 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "concurrently": "^8.2.2"
   }
 }

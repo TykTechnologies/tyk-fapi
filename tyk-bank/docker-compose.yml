@@ -22,26 +22,26 @@ services:
       retries: 3
       start_period: 10s
 
-  # UK Open Banking - Payment Initiation API (uncomment when implemented)
-  # uk-payment-initiation:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     args:
-  #       - SERVICE=uk-payment-initiation
-  #   ports:
-  #     - "3002:3001"
-  #   environment:
-  #     - NODE_ENV=production
-  #     - PORT=3001
-  #     - SERVICE=uk-payment-initiation
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
+  # UK Open Banking - Payment Initiation API
+  uk-payment-initiation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE=uk-payment-initiation
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - SERVICE=uk-payment-initiation
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Brazil Open Banking - Account Information API (uncomment when implemented)
   # brazil-account-information:
@@ -74,3 +74,4 @@ services:
   #     - API_URL=http://localhost:3001/  # Currently no OpenAPI spec endpoint exists
   #   depends_on:
   #     - uk-account-information
+  #     - uk-payment-initiation

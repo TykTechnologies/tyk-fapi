@@ -19,17 +19,20 @@ RUN npm run build
 ARG SERVICE=uk-account-information
 ENV SERVICE=${SERVICE}
 
-# Expose port
-EXPOSE 3001
+# Expose ports
+EXPOSE 3001 3002
 
 # Set environment variables
 ENV NODE_ENV=production
+# Default port, will be overridden by docker-compose.yml
 ENV PORT=3001
 
 # Run the specified service
 CMD if [ "$SERVICE" = "uk-account-information" ]; then \
       node dist/uk/account-information/server.js; \
     elif [ "$SERVICE" = "uk-payment-initiation" ]; then \
+      # Override default port if not set in environment
+      [ -z "$PORT" ] && export PORT=3002; \
       node dist/uk/payment-initiation/server.js; \
     elif [ "$SERVICE" = "brazil-account-information" ]; then \
       node dist/brazil/account-information/server.js; \
