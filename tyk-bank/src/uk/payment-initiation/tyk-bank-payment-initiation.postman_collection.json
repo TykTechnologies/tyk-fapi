@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "f8e7d6c5-b4a3-2c1d-0e9f-8a7b6c5d4e3f",
     "name": "Tyk-Bank Payment Initiation API",
-    "description": "A collection for testing the complete domestic payment flow in the Tyk-Bank Payment Initiation API.",
+    "description": "A collection for testing the complete domestic payment flow in the Tyk-Bank Payment Initiation API, including FAPI 2.0 Security Profile features.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -61,7 +61,62 @@
       "response": []
     },
     {
-      "name": "2. Get Payment Consent",
+      "name": "2. Push Authorization Request (PAR)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Test request_uri exists",
+              "pm.test(\"Request URI exists\", function () {",
+              "  pm.expect(jsonData.request_uri).to.exist;",
+              "});",
+              "",
+              "// Save request_uri to environment",
+              "if (jsonData.request_uri) {",
+              "  pm.environment.set(\"requestUri\", jsonData.request_uri);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clientId\": \"test-client\",\n  \"responseType\": \"code\",\n  \"scope\": \"payments\",\n  \"redirectUri\": \"http://localhost:3000/callback\",\n  \"state\": \"state123\",\n  \"consentId\": \"{{consentId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/as/par",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "as",
+            "par"
+          ]
+        },
+        "description": "Pushes an authorization request to the authorization server."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Authorize Payment Consent",
       "event": [
         {
           "listen": "test",
@@ -75,7 +130,58 @@
               "  pm.response.to.have.status(200);",
               "});",
               "",
-              "// Test consent status (should be Authorised in the mock implementation)",
+              "// Test consent status is now Authorised",
+              "pm.test(\"Consent status is Authorised\", function () {",
+              "  pm.expect(jsonData.Data.Status).to.eql(\"Authorised\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payment-consents/{{consentId}}/authorize",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payment-consents",
+            "{{consentId}}",
+            "authorize"
+          ]
+        },
+        "description": "Authorizes a payment consent."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Payment Consent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test consent status is Authorised",
               "pm.test(\"Consent status is Authorised\", function () {",
               "  pm.expect(jsonData.Data.Status).to.eql(\"Authorised\");",
               "});"
@@ -102,7 +208,7 @@
       "response": []
     },
     {
-      "name": "3. Check Funds Availability",
+      "name": "5. Check Funds Availability",
       "event": [
         {
           "listen": "test",
@@ -144,7 +250,7 @@
       "response": []
     },
     {
-      "name": "4. Create Domestic Payment",
+      "name": "6. Create Domestic Payment",
       "event": [
         {
           "listen": "test",
@@ -199,7 +305,7 @@
       "response": []
     },
     {
-      "name": "5. Get Domestic Payment",
+      "name": "7. Get Domestic Payment",
       "event": [
         {
           "listen": "test",
@@ -241,7 +347,7 @@
       "response": []
     },
     {
-      "name": "6. Get Payment Details",
+      "name": "8. Get Payment Details",
       "event": [
         {
           "listen": "test",

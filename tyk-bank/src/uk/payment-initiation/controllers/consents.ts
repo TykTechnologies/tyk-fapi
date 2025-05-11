@@ -66,11 +66,8 @@ export const createDomesticPaymentConsent = (req: Request, res: Response) => {
       consentRequest.Risk || {}
     );
     
-    // For demo purposes, automatically authorize the consent
-    // In a real implementation, this would require user authorization
-    setTimeout(() => {
-      updatePaymentConsentStatus(newConsent.ConsentId, ConsentStatus.AUTHORISED);
-    }, 1000);
+    // The consent will remain in AwaitingAuthorisation status
+    // until explicitly authorized via the authorization endpoint
     
     const response = {
       Data: {
@@ -83,7 +80,8 @@ export const createDomesticPaymentConsent = (req: Request, res: Response) => {
       },
       Risk: newConsent.Risk,
       Links: {
-        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}/${newConsent.ConsentId}`
+        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}/${newConsent.ConsentId}`,
+        Authorize: `${req.protocol}://${req.get('host')}/domestic-payment-consents/${newConsent.ConsentId}/authorize`
       } as Links,
       Meta: {
         TotalPages: 1

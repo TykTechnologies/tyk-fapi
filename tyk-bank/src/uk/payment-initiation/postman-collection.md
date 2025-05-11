@@ -31,11 +31,13 @@ The collection demonstrates the end-to-end domestic payment flow, from creating 
 
 ```mermaid
 graph TD
-    A[Create Payment Consent] -->|Save ConsentId| B[Get Payment Consent]
-    B -->|Verify Consent Status| C[Check Funds Availability]
-    C -->|Verify Funds Available| D[Create Domestic Payment]
-    D -->|Save PaymentId| E[Get Domestic Payment]
-    E -->|Verify Payment Status| F[Get Payment Details]
+    A[Create Payment Consent] -->|Save ConsentId| B[Push Authorization Request]
+    B -->|Save RequestUri| C[Authorize Payment Consent]
+    C -->|Verify Consent Status| D[Get Payment Consent]
+    D -->|Verify Consent Status| E[Check Funds Availability]
+    E -->|Verify Funds Available| F[Create Domestic Payment]
+    F -->|Save PaymentId| G[Get Domestic Payment]
+    G -->|Verify Payment Status| H[Get Payment Details]
 ```
 
 ## Setup Instructions
@@ -45,6 +47,7 @@ graph TD
 Create a new environment in Postman with the following variables:
 - `baseUrl` (e.g., http://localhost:3002)
 - `consentId` (leave empty, will be populated during execution)
+- `requestUri` (leave empty, will be populated during execution)
 - `paymentId` (leave empty, will be populated during execution)
 
 ### 2. Create the Collection
@@ -105,7 +108,67 @@ if (jsonData.Data && jsonData.Data.ConsentId) {
 }
 ```
 
-### 2. Get Payment Consent
+### 2. Push Authorization Request (PAR)
+
+- **Method**: POST
+- **URL**: `{{baseUrl}}/as/par`
+- **Headers**:
+  - Content-Type: application/json
+- **Body**:
+```json
+{
+  "clientId": "test-client",
+  "responseType": "code",
+  "scope": "payments",
+  "redirectUri": "http://localhost:3000/callback",
+  "state": "state123",
+  "consentId": "{{consentId}}"
+}
+```
+- **Tests Script**:
+```javascript
+// Parse response
+var jsonData = pm.response.json();
+
+// Test status code
+pm.test("Status code is 201", function () {
+  pm.response.to.have.status(201);
+});
+
+// Test request_uri exists
+pm.test("Request URI exists", function () {
+  pm.expect(jsonData.request_uri).to.exist;
+});
+
+// Save request_uri to environment
+if (jsonData.request_uri) {
+  pm.environment.set("requestUri", jsonData.request_uri);
+}
+```
+
+### 3. Authorize Payment Consent
+
+- **Method**: PUT
+- **URL**: `{{baseUrl}}/domestic-payment-consents/{{consentId}}/authorize`
+- **Headers**:
+  - Content-Type: application/json
+- **Tests Script**:
+```javascript
+// Parse response
+var jsonData = pm.response.json();
+
+// Test status code
+pm.test("Status code is 200", function () {
+  pm.response.to.have.status(200);
+});
+
+// Test consent status is now Authorised
+pm.test("Consent status is Authorised", function () {
+  pm.expect(jsonData.Data.Status).to.eql("Authorised");
+});
+```
+
+### 4. Get Payment Consent
 
 - **Method**: GET
 - **URL**: `{{baseUrl}}/domestic-payment-consents/{{consentId}}`
@@ -119,13 +182,13 @@ pm.test("Status code is 200", function () {
   pm.response.to.have.status(200);
 });
 
-// Test consent status (should be Authorised in the mock implementation)
+// Test consent status is Authorised
 pm.test("Consent status is Authorised", function () {
   pm.expect(jsonData.Data.Status).to.eql("Authorised");
 });
 ```
 
-### 3. Check Funds Availability
+### 5. Check Funds Availability
 
 - **Method**: GET
 - **URL**: `{{baseUrl}}/domestic-payment-consents/{{consentId}}/funds-confirmation`
@@ -145,7 +208,7 @@ pm.test("Funds are available", function () {
 });
 ```
 
-### 4. Create Domestic Payment
+### 6. Create Domestic Payment
 
 - **Method**: POST
 - **URL**: `{{baseUrl}}/domestic-payments`
@@ -199,7 +262,7 @@ if (jsonData.Data && jsonData.Data.DomesticPaymentId) {
 }
 ```
 
-### 5. Get Domestic Payment
+### 7. Get Domestic Payment
 
 - **Method**: GET
 - **URL**: `{{baseUrl}}/domestic-payments/{{paymentId}}`
@@ -220,7 +283,7 @@ pm.test("Payment status is valid", function () {
 });
 ```
 
-### 6. Get Payment Details
+### 8. Get Payment Details
 
 - **Method**: GET
 - **URL**: `{{baseUrl}}/domestic-payments/{{paymentId}}/payment-details`
@@ -251,10 +314,12 @@ The collection will execute each request in sequence, passing the ConsentId and 
 
 ## Expected Results
 
-- A payment consent is created and authorized
+- A payment consent is created
+- An authorization request is pushed (PAR)
+- The payment consent is authorized
 - Funds availability is confirmed
 - A domestic payment is created
 - The payment status is verified
 - Payment details are retrieved
 
-This collection demonstrates the complete end-to-end flow of the domestic payment process in the Tyk-Bank Payment Initiation API.
+This collection demonstrates the complete end-to-end flow of the domestic payment process in the Tyk-Bank Payment Initiation API, including the FAPI 2.0 Security Profile features like Pushed Authorization Requests (PAR) and explicit consent authorization.
