@@ -50,7 +50,13 @@ export default function CallbackPage() {
         const consentId = sessionStorage.getItem('currentConsentId');
         const initiationData = sessionStorage.getItem('currentInitiationData');
         
+        console.log('Callback page - session storage:', {
+          consentId,
+          initiationData: initiationData ? 'present' : 'missing'
+        });
+        
         if (!consentId || !initiationData) {
+          console.error('Missing consent information in session storage');
           setError('Missing consent information');
           setStatus('error');
           return;

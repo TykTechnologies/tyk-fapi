@@ -32,6 +32,16 @@ export function AuthorizationOptions({ consent, requestUri, onAuthorized }: Auth
   };
   
   const handleManualAuthorization = () => {
+    // Store consent data in session storage for the callback
+    if (!sessionStorage.getItem('currentConsentId')) {
+      sessionStorage.setItem('currentConsentId', consent.Data.ConsentId);
+      sessionStorage.setItem('currentInitiationData', JSON.stringify(consent.Data.Initiation));
+      console.log('Stored consent data in session storage:', {
+        consentId: consent.Data.ConsentId,
+        initiation: consent.Data.Initiation
+      });
+    }
+    
     // Redirect to the authorization URL
     const authorizationUrl = paymentsApi.getAuthorizationUrl(requestUri);
     window.location.href = authorizationUrl;

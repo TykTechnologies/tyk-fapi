@@ -250,7 +250,15 @@ export const getAllTransactions = (): Transaction[] => {
  * Get transactions by account ID
  */
 export const getTransactionsByAccountId = (accountId: string): Transaction[] => {
-  return transactions.filter(transaction => transaction.AccountId === accountId);
+  console.log(`[DEBUG] getTransactionsByAccountId called with accountId: ${accountId}`);
+  console.log(`[DEBUG] Total transactions before filtering: ${transactions.length}`);
+  
+  const filteredTransactions = transactions.filter(transaction => transaction.AccountId === accountId);
+  
+  console.log(`[DEBUG] Filtered transactions: ${filteredTransactions.length}`);
+  console.log(`[DEBUG] Filtered transaction IDs: ${filteredTransactions.map(t => t.TransactionId).join(', ')}`);
+  
+  return filteredTransactions;
 };
 
 /**
@@ -282,10 +290,20 @@ export const getTransactionsByAccountIdAndDateRange = (
  * Create a new transaction
  */
 export const createTransaction = (transaction: Omit<Transaction, 'TransactionId'>): Transaction => {
+  console.log(`[DEBUG] createTransaction called with data:`, JSON.stringify(transaction, null, 2));
+  
   const newTransaction: Transaction = {
     ...transaction,
     TransactionId: `tx${uuidv4().substring(0, 6)}`
   };
+  
+  console.log(`[DEBUG] New transaction created with ID: ${newTransaction.TransactionId}`);
+  console.log(`[DEBUG] Total transactions before adding: ${transactions.length}`);
+  
   transactions.push(newTransaction);
+  
+  console.log(`[DEBUG] Total transactions after adding: ${transactions.length}`);
+  console.log(`[DEBUG] All transaction IDs after adding: ${transactions.map(t => t.TransactionId).join(', ')}`);
+  
   return newTransaction;
 };

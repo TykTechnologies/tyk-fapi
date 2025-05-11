@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.set('json spaces', 2);
 
-// Custom middleware to add FAPI headers to responses
+// Custom middleware to add FAPI headers and disable caching for all responses
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Add x-fapi-interaction-id if provided in request or generate a new one
   const interactionId = req.header('x-fapi-interaction-id') || `tyk-${Date.now()}`;
@@ -24,6 +24,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   
   // Add other common FAPI headers
   res.setHeader('x-fapi-financial-id', 'TYK12345');
+  
+  // Disable caching for all responses
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
   
   next();
 });

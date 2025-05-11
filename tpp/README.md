@@ -5,7 +5,7 @@ A NextJS application that connects to a mock bank API to retrieve account inform
 ## Features
 
 - View all accounts with balances on the dashboard
-- View detailed account information
+- View detailed account information and transaction history
 - Make domestic payments with secure authorization flow
 - Support for both automated and manual payment authorization
 - Implementation of FAPI 2.0 security profile with PAR
@@ -82,6 +82,7 @@ The application integrates with two main APIs:
    - Fetch accounts
    - Fetch balances
    - Fetch account details
+   - Fetch account transactions
 
 2. **Payment Initiation API** (port 3002)
    - Create payment consents
@@ -104,7 +105,7 @@ The application implements a secure payment authorization flow based on the FAPI
 ## Future Enhancements
 
 - Add authentication and authorization for the TPP application
-- Implement transaction history
+- Add transaction filtering and sorting
 - Add payment scheduling
 - Support for international payments
 - Unit and integration tests

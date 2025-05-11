@@ -95,6 +95,18 @@ export function PaymentForm() {
     setIsSubmitting(true);
     
     try {
+      // Find the selected account details
+      const selectedAccount = accounts.find(account => account.AccountId === formData.accountId);
+      
+      if (!selectedAccount) {
+        setFormErrors({
+          ...formErrors,
+          accountId: 'Selected account not found'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Step 1: Create a payment consent
       const consentRequest: DomesticPaymentConsentRequest = {
         Data: {
@@ -104,6 +116,12 @@ export function PaymentForm() {
             InstructedAmount: {
               Amount: formData.amount,
               Currency: formData.currency,
+            },
+            DebtorAccount: {
+              SchemeName: selectedAccount.Account.SchemeName,
+              Identification: selectedAccount.Account.Identification,
+              Name: selectedAccount.Account.Name,
+              SecondaryIdentification: selectedAccount.Account.SecondaryIdentification
             },
             CreditorAccount: {
               SchemeName: formData.creditorSchemeName,
@@ -161,6 +179,9 @@ export function PaymentForm() {
         },
         Risk: {},
       };
+      
+      // Ensure the DebtorAccount is included in the payment request
+      console.log('Creating payment with consent data:', JSON.stringify(consentData.Data, null, 2));
       
       const result = await createPaymentMutation.mutateAsync(paymentRequest);
       setPaymentResult(result);

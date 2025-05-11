@@ -3,6 +3,7 @@ import React from 'react';
 import accountsApi from '@/lib/api/accountsApi';
 import { AccountResponse, AccountsResponse } from '@/types/accounts';
 import { BalanceResponse, BalancesResponse } from '@/types/balances';
+import { TransactionsResponse } from '@/types/transactions';
 
 /**
  * Hook for fetching all accounts
@@ -54,9 +55,13 @@ export const useAccountBalances = (accountId: string) => {
  */
 export const useAccountTransactions = (accountId: string) => {
   return useQuery({
-    queryKey: ['account-transactions', accountId],
+    queryKey: ['account-transactions', accountId], // Remove timestamp to prevent continuous refreshing
     queryFn: () => accountsApi.getAccountTransactions(accountId),
     enabled: !!accountId,
+    staleTime: 5000, // Consider data stale after 5 seconds
+    gcTime: 30000, // Cache the data for 30 seconds
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 };
 

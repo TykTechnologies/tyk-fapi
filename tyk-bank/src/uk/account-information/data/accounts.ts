@@ -146,6 +146,13 @@ export const getAccountById = (accountId: string): Account | undefined => {
 };
 
 /**
+ * Get account by identification number
+ */
+export const getAccountByIdentification = (identification: string): Account | undefined => {
+  return accounts.find(account => account.Account.Identification === identification);
+};
+
+/**
  * Create a new account
  */
 export const createAccount = (account: Omit<Account, 'AccountId'>): Account => {

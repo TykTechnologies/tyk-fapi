@@ -4,7 +4,8 @@ import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAccount, useAccountBalances } from '@/hooks/useAccounts';
+import { useAccount, useAccountBalances, useAccountTransactions } from '@/hooks/useAccounts';
+import { TransactionCard } from '@/components/accounts/TransactionCard';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { getAccountTypeDisplayName, getBalanceTypeDisplayName } from '@/lib/utils/displayNames';
@@ -31,9 +32,16 @@ export default function AccountDetailsPage() {
     error: balancesError
   } = useAccountBalances(accountId);
 
-  const isLoading = isAccountLoading || isBalancesLoading;
-  const isError = isAccountError || isBalancesError;
-  const error = accountError || balancesError;
+  const {
+    data: transactionsData,
+    isLoading: isTransactionsLoading,
+    isError: isTransactionsError,
+    error: transactionsError
+  } = useAccountTransactions(accountId);
+
+  const isLoading = isAccountLoading || isBalancesLoading || isTransactionsLoading;
+  const isError = isAccountError || isBalancesError || isTransactionsError;
+  const error = accountError || balancesError || transactionsError;
 
   if (isLoading) {
     return <LoadingState />;
@@ -50,6 +58,7 @@ export default function AccountDetailsPage() {
 
   const account = accountData?.Data.Account;
   const balances = balancesData?.Data.Balance || [];
+  const transactions = transactionsData?.Data.Transaction || [];
 
   if (!account) {
     return (
@@ -145,6 +154,26 @@ export default function AccountDetailsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Transactions</CardTitle>
+          <CardDescription>Recent account transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {transactions.length > 0 ? (
+            <div className="space-y-4">
+              {transactions.map((transaction) => (
+                <TransactionCard key={transaction.TransactionId} transaction={transaction} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              No transaction information available
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => router.push('/')}>

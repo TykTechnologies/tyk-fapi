@@ -1,8 +1,15 @@
 import axios from 'axios';
 import { AccountResponse, AccountsResponse } from '@/types/accounts';
 import { BalanceResponse, BalancesResponse } from '@/types/balances';
+import { TransactionResponse, TransactionsResponse } from '@/types/transactions';
 
 const API_URL = process.env.NEXT_PUBLIC_ACCOUNT_API_URL;
+
+// Helper function to add a cache-busting parameter to URLs
+const addCacheBuster = (url: string) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_=${Date.now()}`;
+};
 
 /**
  * API client for account information
@@ -71,9 +78,21 @@ const accountsApi = {
    * @param accountId Account ID
    * @returns Promise with transactions response
    */
-  getAccountTransactions: async (accountId: string): Promise<any> => {
+  getAccountTransactions: async (accountId: string): Promise<TransactionsResponse> => {
     try {
-      const response = await axios.get(`${API_URL}/accounts/${accountId}/transactions`);
+      // Add cache-busting parameter to prevent caching
+      const url = addCacheBuster(`${API_URL}/accounts/${accountId}/transactions`);
+      console.log(`Fetching transactions from: ${url}`);
+      
+      const response = await axios.get<TransactionResponse>(url, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      console.log(`Received ${response.data.Data.Transaction?.length || 0} transactions for account ${accountId}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching transactions for account ${accountId}:`, error);

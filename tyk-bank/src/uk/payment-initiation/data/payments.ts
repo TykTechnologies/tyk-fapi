@@ -1,13 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  DomesticPayment, 
-  PaymentStatus 
+import axios from 'axios';
+import {
+  DomesticPayment,
+  PaymentStatus
 } from '../models/payment';
-import { 
-  getPaymentConsentById, 
-  updatePaymentConsentStatus 
+import {
+  getPaymentConsentById,
+  updatePaymentConsentStatus
 } from './consents';
 import { ConsentStatus } from '../models/consent';
+import { TransactionStatus } from '../../account-information/models/transaction';
+import { CreditDebitIndicator } from '../../account-information/models/balance';
+import { getAccountByIdentification } from '../../account-information/data/accounts';
 
 /**
  * Mock payments data
@@ -95,13 +99,70 @@ export const createPayment = (consentId: string): DomesticPayment | undefined =>
   
   payments.push(newPayment);
   
-  // Update consent status to CONSUMED
-  updatePaymentConsentStatus(consentId, ConsentStatus.CONSUMED);
+  // Create debit transaction for the sender account
+  console.log('Payment consent:', JSON.stringify(consent, null, 2));
+  
+  if (consent.Initiation.DebtorAccount) {
+    console.log(`Found debtor account: ${JSON.stringify(consent.Initiation.DebtorAccount, null, 2)}`);
+    
+    // Look up the internal account ID using the account identification
+    const account = getAccountByIdentification(consent.Initiation.DebtorAccount.Identification);
+    
+    if (account) {
+      console.log(`Found matching account with internal ID: ${account.AccountId}`);
+      
+      try {
+        const transaction = {
+          AccountId: account.AccountId, // Use the internal account ID instead of the identification
+          Status: TransactionStatus.BOOKED,
+          BookingDateTime: now,
+          ValueDateTime: now,
+          TransactionInformation: `Payment to ${consent.Initiation.CreditorAccount.Name} (${new Date().toISOString()})`,
+          Amount: {
+            Amount: consent.Initiation.InstructedAmount.Amount,
+            Currency: consent.Initiation.InstructedAmount.Currency
+          },
+          CreditDebitIndicator: CreditDebitIndicator.DEBIT,
+          BankTransactionCode: {
+            Code: 'Debit',
+            SubCode: 'DomesticPayment'
+          },
+          CreditorAccount: {
+            SchemeName: consent.Initiation.CreditorAccount.SchemeName,
+            Identification: consent.Initiation.CreditorAccount.Identification,
+            Name: consent.Initiation.CreditorAccount.Name
+          }
+        };
+        
+        console.log('Creating transaction with data:', JSON.stringify(transaction, null, 2));
+        
+        // Call the account information API to create the transaction
+        axios.post('http://localhost:3001/transactions', transaction)
+          .then((response: any) => {
+            console.log(`Transaction created in account information API for payment ${newPayment.DomesticPaymentId}:`,
+              JSON.stringify(response.data, null, 2));
+          })
+          .catch((error: any) => {
+            console.error(`Failed to create transaction in account information API for payment ${newPayment.DomesticPaymentId}:`,
+              error.response ? error.response.data : error.message);
+          });
+      } catch (error) {
+        console.error(`Failed to create transaction for payment ${newPayment.DomesticPaymentId}:`, error);
+      }
+    } else {
+      console.warn(`Could not find account with identification ${consent.Initiation.DebtorAccount.Identification}`);
+    }
+  } else {
+    console.warn(`No debtor account specified for payment ${newPayment.DomesticPaymentId}, skipping transaction creation`);
+  }
   
   // In a real implementation, we would initiate the actual payment process here
   // For this mock implementation, we'll simulate the payment completing after a short delay
   setTimeout(() => {
     updatePaymentStatus(newPayment.DomesticPaymentId, PaymentStatus.ACCEPTED_SETTLEMENT_COMPLETED);
+    
+    // Update consent status to CONSUMED after payment is completed
+    updatePaymentConsentStatus(consentId, ConsentStatus.CONSUMED);
   }, 2000);
   
   return newPayment;

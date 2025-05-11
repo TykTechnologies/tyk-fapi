@@ -30,7 +30,10 @@ export const createDomesticPayment = (req: Request, res: Response) => {
     
     // Check if consent exists
     const consent = getPaymentConsentById(ConsentId);
+    console.log(`Creating payment for consent ${ConsentId}, consent status: ${consent?.Status}`);
+    
     if (!consent) {
+      console.log(`Consent with ID ${ConsentId} not found`);
       return res.status(400).json({
         ErrorCode: 'InvalidConsentId',
         ErrorMessage: `Consent with ID ${ConsentId} not found`
@@ -39,6 +42,7 @@ export const createDomesticPayment = (req: Request, res: Response) => {
     
     // Check if consent is in the right state
     if (consent.Status !== ConsentStatus.AUTHORISED) {
+      console.log(`Consent with ID ${ConsentId} has invalid status: ${consent.Status}, expected ${ConsentStatus.AUTHORISED}`);
       return res.status(400).json({
         ErrorCode: 'InvalidConsentStatus',
         ErrorMessage: `Consent with ID ${ConsentId} has status ${consent.Status}, expected ${ConsentStatus.AUTHORISED}`

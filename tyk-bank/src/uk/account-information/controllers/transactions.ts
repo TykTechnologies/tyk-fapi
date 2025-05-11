@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { 
-  getAllTransactions, 
-  getTransactionsByAccountId, 
-  getTransactionsByAccountIdAndDateRange 
+import {
+  getAllTransactions,
+  getTransactionsByAccountId,
+  getTransactionsByAccountIdAndDateRange,
+  createTransaction
 } from '../data/transactions';
 import { getAccountById as fetchAccountById } from '../data/accounts';
 import { Links, Meta } from '../../../common/types/common';
@@ -88,6 +89,14 @@ export const getTransactionsByAccount = (req: Request, res: Response) => {
       toBookingDateTime as string | undefined
     );
     
+    console.log(`[DEBUG] Transactions for account ${accountId}:`, JSON.stringify(transactions, null, 2));
+    console.log(`[DEBUG] Total transactions found: ${transactions.length}`);
+    
+    // Log all transactions in the system to see if our new ones are there
+    const allTransactions = getAllTransactions();
+    console.log(`[DEBUG] All transactions in the system: ${allTransactions.length}`);
+    console.log(`[DEBUG] All transactions with AccountId '${accountId}': ${allTransactions.filter(t => t.AccountId === accountId).length}`);
+    
     const response = {
       Data: {
         Transaction: transactions
@@ -100,9 +109,64 @@ export const getTransactionsByAccount = (req: Request, res: Response) => {
       } as Meta
     };
     
+    // Disable caching for this response
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    
     res.status(200).json(response);
   } catch (error) {
     console.error('Error getting transactions by account ID:', error);
+    res.status(500).json({
+      ErrorCode: 'InternalServerError',
+      ErrorMessage: 'An internal server error occurred'
+    });
+  }
+};
+
+/**
+ * Create a transaction from a payment
+ * @param req Express request
+ * @param res Express response
+ */
+export const createTransactionFromPayment = (req: Request, res: Response) => {
+  try {
+    const transactionData = req.body;
+    
+    // Validate required fields
+    if (!transactionData.AccountId) {
+      return res.status(400).json({
+        ErrorCode: 'InvalidRequest',
+        ErrorMessage: 'AccountId is required'
+      });
+    }
+    
+    // Check if account exists
+    const account = fetchAccountById(transactionData.AccountId);
+    if (!account) {
+      return res.status(404).json({
+        ErrorCode: 'ResourceNotFound',
+        ErrorMessage: `Account with ID ${transactionData.AccountId} not found`
+      });
+    }
+    
+    console.log(`Creating transaction for account ${transactionData.AccountId} from payment API`);
+    
+    // Create the transaction
+    const newTransaction = createTransaction(transactionData);
+    
+    res.status(201).json({
+      Data: {
+        Transaction: newTransaction
+      },
+      Links: {
+        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}`
+      } as Links,
+      Meta: {} as Meta
+    });
+  } catch (error) {
+    console.error('Error creating transaction:', error);
     res.status(500).json({
       ErrorCode: 'InternalServerError',
       ErrorMessage: 'An internal server error occurred'
