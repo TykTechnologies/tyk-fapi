@@ -171,6 +171,12 @@ The project is structured as a collection of microservices, each representing a 
 - `GET /domestic-payments/{DomesticPaymentId}` - Get domestic payment details
 - `GET /domestic-payments/{DomesticPaymentId}/payment-details` - Get additional payment details
 
+## Testing with Postman
+
+A Postman collection is available to test the complete domestic payment flow in the Payment Initiation API. The collection includes requests for creating payment consents, checking funds availability, creating payments, and retrieving payment details.
+
+For detailed instructions on setting up and using the Postman collection, see the [Postman Collection Documentation](src/uk/payment-initiation/postman-collection.md).
+
 ## Mock Data
 
 The mock bank comes pre-populated with sample data:
