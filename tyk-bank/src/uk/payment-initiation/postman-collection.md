@@ -1,6 +1,27 @@
 # Tyk-Bank Payment Initiation API - Postman Collection
 
-This document provides instructions for creating a Postman collection to test the complete domestic payment flow in the Tyk-Bank Payment Initiation API.
+This document provides instructions for testing the complete domestic payment flow in the Tyk-Bank Payment Initiation API using Postman.
+
+## Quick Start - Import Ready-Made Collection
+
+For your convenience, we've provided ready-made Postman files that you can import directly:
+
+1. **Collection File**: [tyk-bank-payment-initiation.postman_collection.json](./tyk-bank-payment-initiation.postman_collection.json)
+2. **Environment File**: [tyk-bank-payment-initiation.postman_environment.json](./tyk-bank-payment-initiation.postman_environment.json)
+
+### Import Instructions
+
+1. Open Postman
+2. Click on "Import" button in the top left
+3. Select the collection and environment JSON files
+4. Select the imported environment from the environment dropdown in the top right
+5. Open the collection and run the requests in sequence
+
+The collection is pre-configured with test scripts that will automatically extract and store the necessary IDs between requests.
+
+## Manual Setup Instructions
+
+If you prefer to create the collection manually, follow the instructions below.
 
 ## Overview
 

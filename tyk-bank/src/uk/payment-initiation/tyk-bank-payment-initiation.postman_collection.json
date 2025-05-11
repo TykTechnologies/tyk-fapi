@@ -1,0 +1,313 @@
+{
+  "info": {
+    "_postman_id": "f8e7d6c5-b4a3-2c1d-0e9f-8a7b6c5d4e3f",
+    "name": "Tyk-Bank Payment Initiation API",
+    "description": "A collection for testing the complete domestic payment flow in the Tyk-Bank Payment Initiation API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create Payment Consent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Test consent created successfully",
+              "pm.test(\"Consent created successfully\", function () {",
+              "  pm.expect(jsonData.Data.ConsentId).to.exist;",
+              "});",
+              "",
+              "// Save ConsentId to environment",
+              "if (jsonData.Data && jsonData.Data.ConsentId) {",
+              "  pm.environment.set(\"consentId\", jsonData.Data.ConsentId);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Data\": {\n    \"Initiation\": {\n      \"InstructionIdentification\": \"ACME412\",\n      \"EndToEndIdentification\": \"FRESCO.21302.GFX.20\",\n      \"InstructedAmount\": {\n        \"Amount\": \"165.88\",\n        \"Currency\": \"GBP\"\n      },\n      \"CreditorAccount\": {\n        \"SchemeName\": \"UK.OBIE.SortCodeAccountNumber\",\n        \"Identification\": \"08080021325698\",\n        \"Name\": \"ACME Inc\"\n      },\n      \"RemittanceInformation\": {\n        \"Reference\": \"FRESCO-101\",\n        \"Unstructured\": \"Internal ops code 5120101\"\n      }\n    }\n  },\n  \"Risk\": {}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payment-consents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payment-consents"
+          ]
+        },
+        "description": "Creates a new domestic payment consent."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Get Payment Consent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test consent status (should be Authorised in the mock implementation)",
+              "pm.test(\"Consent status is Authorised\", function () {",
+              "  pm.expect(jsonData.Data.Status).to.eql(\"Authorised\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payment-consents/{{consentId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payment-consents",
+            "{{consentId}}"
+          ]
+        },
+        "description": "Retrieves a domestic payment consent by ID."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Check Funds Availability",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test funds availability",
+              "pm.test(\"Funds are available\", function () {",
+              "  pm.expect(jsonData.Data.FundsAvailableResult.FundsAvailable).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payment-consents/{{consentId}}/funds-confirmation",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payment-consents",
+            "{{consentId}}",
+            "funds-confirmation"
+          ]
+        },
+        "description": "Checks if funds are available for the payment."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Create Domestic Payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Test payment created successfully",
+              "pm.test(\"Payment created successfully\", function () {",
+              "  pm.expect(jsonData.Data.DomesticPaymentId).to.exist;",
+              "  pm.expect(jsonData.Data.Status).to.exist;",
+              "});",
+              "",
+              "// Save PaymentId to environment",
+              "if (jsonData.Data && jsonData.Data.DomesticPaymentId) {",
+              "  pm.environment.set(\"paymentId\", jsonData.Data.DomesticPaymentId);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Data\": {\n    \"ConsentId\": \"{{consentId}}\",\n    \"Initiation\": {\n      \"InstructionIdentification\": \"ACME412\",\n      \"EndToEndIdentification\": \"FRESCO.21302.GFX.20\",\n      \"InstructedAmount\": {\n        \"Amount\": \"165.88\",\n        \"Currency\": \"GBP\"\n      },\n      \"CreditorAccount\": {\n        \"SchemeName\": \"UK.OBIE.SortCodeAccountNumber\",\n        \"Identification\": \"08080021325698\",\n        \"Name\": \"ACME Inc\"\n      },\n      \"RemittanceInformation\": {\n        \"Reference\": \"FRESCO-101\",\n        \"Unstructured\": \"Internal ops code 5120101\"\n      }\n    }\n  },\n  \"Risk\": {}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payments"
+          ]
+        },
+        "description": "Creates a new domestic payment using the consent."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Domestic Payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test payment status",
+              "pm.test(\"Payment status is valid\", function () {",
+              "  const validStatuses = [\"AcceptedSettlementInProcess\", \"AcceptedSettlementCompleted\"];",
+              "  pm.expect(validStatuses).to.include(jsonData.Data.Status);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payments/{{paymentId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payments",
+            "{{paymentId}}"
+          ]
+        },
+        "description": "Retrieves a domestic payment by ID."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Payment Details",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "var jsonData = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test payment details exist",
+              "pm.test(\"Payment details exist\", function () {",
+              "  pm.expect(jsonData.Data.PaymentStatus).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/domestic-payments/{{paymentId}}/payment-details",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "domestic-payments",
+            "{{paymentId}}",
+            "payment-details"
+          ]
+        },
+        "description": "Retrieves additional details about the payment."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    }
+  ]
+}
