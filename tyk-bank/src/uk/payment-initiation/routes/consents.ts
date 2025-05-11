@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { 
-  createDomesticPaymentConsent, 
+import {
+  createDomesticPaymentConsent,
   getDomesticPaymentConsent,
   getDomesticPaymentConsentFundsConfirmation
 } from '../controllers/consents';
+import { authorizePaymentConsent } from '../controllers/authorization';
 
 const router = Router();
 
@@ -64,5 +65,24 @@ router.get('/:consentId', getDomesticPaymentConsent);
  *         description: Consent not found
  */
 router.get('/:consentId/funds-confirmation', getDomesticPaymentConsentFundsConfirmation);
+
+/**
+ * @swagger
+ * /domestic-payment-consents/{consentId}/authorize:
+ *   put:
+ *     summary: Authorize payment consent
+ *     description: Authorizes a payment consent
+ *     parameters:
+ *       - in: path
+ *         name: consentId
+ *         required: true
+ *         description: ID of the consent to authorize
+ *     responses:
+ *       200:
+ *         description: Consent authorized successfully
+ *       404:
+ *         description: Consent not found
+ */
+router.put('/:consentId/authorize', authorizePaymentConsent);
 
 export default router;

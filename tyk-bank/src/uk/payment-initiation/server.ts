@@ -3,6 +3,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import consentsRoutes from './routes/consents';
 import paymentsRoutes from './routes/payments';
+import parRoutes from './routes/par';
+import authorizationRoutes from './routes/authorization';
 
 // Create Express app
 const app = express();
@@ -34,6 +36,8 @@ app.get('/health', (req: Request, res: Response) => {
 // API routes
 app.use('/domestic-payment-consents', consentsRoutes);
 app.use('/domestic-payments', paymentsRoutes);
+app.use('/as/par', parRoutes);
+app.use('/as', authorizationRoutes);
 
 // Root endpoint with API information
 app.get('/', (req: Request, res: Response) => {
@@ -44,10 +48,13 @@ app.get('/', (req: Request, res: Response) => {
     endpoints: [
       '/domestic-payment-consents',
       '/domestic-payment-consents/{ConsentId}',
+      '/domestic-payment-consents/{ConsentId}/authorize',
       '/domestic-payment-consents/{ConsentId}/funds-confirmation',
       '/domestic-payments',
       '/domestic-payments/{DomesticPaymentId}',
-      '/domestic-payments/{DomesticPaymentId}/payment-details'
+      '/domestic-payments/{DomesticPaymentId}/payment-details',
+      '/as/par',
+      '/as/authorize'
     ]
   });
 });

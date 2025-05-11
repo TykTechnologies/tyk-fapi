@@ -8,7 +8,7 @@ This project provides a mock implementation of Open Banking APIs from multiple c
 
 **Currently Implemented:**
 - UK Open Banking Account Information API
-- UK Open Banking Payment Initiation API (Domestic Payments only)
+- UK Open Banking Payment Initiation API (Domestic Payments only) with FAPI 2.0 Security Profile
 
 **Planned for Future:**
 - UK Open Banking Payment Initiation API (Additional payment types)
@@ -22,6 +22,8 @@ The mock bank provides endpoints for:
 - Account Access Consents
 - Domestic Payment Consents
 - Domestic Payments
+- Pushed Authorization Requests (PAR)
+- Payment Authorization
 
 ## Project Structure
 
@@ -166,10 +168,16 @@ The project is structured as a collection of microservices, each representing a 
 
 - `POST /domestic-payment-consents` - Create a new domestic payment consent
 - `GET /domestic-payment-consents/{ConsentId}` - Get domestic payment consent details
+- `PUT /domestic-payment-consents/{ConsentId}/authorize` - Authorize a payment consent
 - `GET /domestic-payment-consents/{ConsentId}/funds-confirmation` - Check funds availability
 - `POST /domestic-payments` - Create a new domestic payment
 - `GET /domestic-payments/{DomesticPaymentId}` - Get domestic payment details
 - `GET /domestic-payments/{DomesticPaymentId}/payment-details` - Get additional payment details
+
+### UK Open Banking - Authorization Server
+
+- `POST /as/par` - Create a pushed authorization request (PAR)
+- `GET /as/authorize` - Authorization endpoint for handling authorization requests
 
 ## Testing with Postman
 
@@ -189,4 +197,19 @@ The mock bank comes pre-populated with sample data:
 
 ## Security
 
-This mock implementation does not include authentication or authorization. It's designed to be used behind a Tyk Gateway that will handle security aspects.
+This mock implementation includes basic FAPI 2.0 security profile features:
+
+- **Pushed Authorization Requests (PAR)**: Enhances security by moving authorization request parameters to a back-channel.
+- **Authorization Flow**: Simulates the authorization flow for payment consents.
+
+However, it does not include full authentication or authorization mechanisms. It's designed to be used behind a Tyk Gateway that will handle additional security aspects.
+
+## FAPI 2.0 Security Profile
+
+The Payment Initiation API implements key aspects of the FAPI 2.0 Security Profile:
+
+- **PAR (Pushed Authorization Requests)**: Authorization requests are pushed to the authorization server before redirecting the user.
+- **Authorization Flow**: The API supports both automated and manual authorization flows.
+- **Consent Management**: Payment consents must be explicitly authorized before payments can be created.
+
+These features enhance security by reducing the exposure of sensitive parameters and providing a more robust authorization flow.
