@@ -1,4 +1,4 @@
-# Banking Third-Party Provider
+# Banking Third-Party Provider (TPP)
 
 A NextJS application that connects to a mock bank API to retrieve account information and make domestic payments, implementing FAPI 2.0 security profile with Pushed Authorization Requests (PAR).
 
@@ -24,6 +24,7 @@ A NextJS application that connects to a mock bank API to retrieve account inform
 
 - Node.js 18+ and npm
 - Running instance of the mock bank API (tyk-bank)
+- API Gateway (optional, can connect directly to the mock bank)
 
 ## Getting Started
 
@@ -31,13 +32,17 @@ A NextJS application that connects to a mock bank API to retrieve account inform
 
 2. Install dependencies
    ```bash
+   cd tpp
    npm install
    ```
 
-3. Create a `.env.local` file in the root directory with the following content:
+3. Create a `.env.local` file in the tpp directory with the following content:
    ```
-   NEXT_PUBLIC_ACCOUNT_API_URL=http://localhost:3001
-   NEXT_PUBLIC_PAYMENT_API_URL=http://localhost:3002
+   NEXT_PUBLIC_ACCOUNT_API_URL=/api
+   NEXT_PUBLIC_PAYMENT_API_URL=/api
+   ACCOUNT_INFORMATION_API_URL=http://localhost:8080/account-information
+   PAYMENT_INITIATION_API_URL=http://localhost:8080/payment-initiation
+   AUTHORIZATION_SERVER_URL=http://localhost:3002
    ```
 
 4. Start the development server
@@ -59,7 +64,8 @@ tpp/
 │   │   ├── accounts/        # Account pages
 │   │   ├── payments/        # Payment pages
 │   │   ├── bank-authorize/  # Bank authorization page
-│   │   └── callback/        # Authorization callback page
+│   │   ├── callback/        # Authorization callback page
+│   │   └── api/             # Server-side API routes
 │   ├── components/          # React components
 │   │   ├── ui/              # ShadCN UI components
 │   │   ├── accounts/        # Account-related components
@@ -74,33 +80,14 @@ tpp/
 └── package.json             # Project dependencies
 ```
 
-## API Integration
+## Documentation
 
-The application integrates with two main APIs:
+For more detailed documentation about the TPP and how it integrates with the other components of the Tyk FAPI Accelerator, see:
 
-1. **Account Information API** (port 3001)
-   - Fetch accounts
-   - Fetch balances
-   - Fetch account details
-   - Fetch account transactions
-
-2. **Payment Initiation API** (port 3002)
-   - Create payment consents
-   - Push authorization requests (PAR)
-   - Authorize payment consents
-   - Initiate payments
-   - Check payment status
-
-## Payment Authorization Flow
-
-The application implements a secure payment authorization flow based on the FAPI 2.0 security profile:
-
-1. **Create Payment Consent**: The application creates a payment consent with the bank.
-2. **Push Authorization Request (PAR)**: The application pushes an authorization request to the bank.
-3. **Authorization Options**:
-   - **Automatic Authorization**: The application can automatically authorize the payment (for testing).
-   - **Manual Authorization**: The user is redirected to a simulated bank authorization page.
-4. **Payment Creation**: After authorization, the application creates the payment using the authorized consent.
+- [System Architecture](../docs/architecture.md) - Overview of the system architecture
+- [TPP Integration](../docs/tpp-integration.md) - How the TPP integrates with other components
+- [Payment Flow](../docs/payment-flow.md) - Detailed explanation of the payment flow
+- [Authorization Options](../docs/authorization-options.md) - Comparison of automatic vs manual authorization
 
 ## Future Enhancements
 

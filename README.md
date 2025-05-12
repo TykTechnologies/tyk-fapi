@@ -26,6 +26,12 @@ This is a monorepo containing multiple sub-applications and components:
   - Supports Docker containerization with microservices architecture
   - Extensible for multiple countries' Open Banking standards
 
+- **tpp/**: Third-Party Provider implementation
+  - NextJS application that connects to the mock bank API
+  - Implements FAPI 2.0 security profile with Pushed Authorization Requests (PAR)
+  - Demonstrates account information retrieval and payment initiation
+  - Supports both automatic and manual authorization flows
+
 - **docs/**: Documentation
   - **tutorials/**: Tutorials (COMING SOON)
   - **specs/**: Specifications (COMING SOON)
@@ -64,6 +70,15 @@ See the [tyk-bank/README.md](tyk-bank/README.md) for instructions on running the
 - Payment Details
 
 It can be run directly with Node.js or using Docker containers.
+
+### Running the TPP Application
+
+See the [tpp/README.md](tpp/README.md) for instructions on running the Third-Party Provider application. The TPP provides a user interface for:
+
+- Viewing account information and balances
+- Viewing transaction history
+- Initiating domestic payments
+- Testing both automatic and manual authorization flows
 
 ## Contributing
 
