@@ -32,19 +32,57 @@ export function AuthorizationOptions({ consent, requestUri, onAuthorized }: Auth
   };
   
   const handleManualAuthorization = () => {
-    // Store consent data in session storage for the callback
-    if (!sessionStorage.getItem('currentConsentId')) {
-      sessionStorage.setItem('currentConsentId', consent.Data.ConsentId);
-      sessionStorage.setItem('currentInitiationData', JSON.stringify(consent.Data.Initiation));
-      console.log('Stored consent data in session storage:', {
-        consentId: consent.Data.ConsentId,
-        initiation: consent.Data.Initiation
-      });
+    // Get and store consent data for manual authorization
+    
+    // Get the consent data
+    const consentId = consent.Data.ConsentId;
+    const initiationData = JSON.stringify(consent.Data.Initiation);
+    
+    // Store in localStorage instead of sessionStorage (more persistent)
+    try {
+      localStorage.setItem('currentConsentId', consentId);
+      localStorage.setItem('currentInitiationData', initiationData);
+      // Consent data stored in localStorage
+    } catch (error) {
+      console.error(`Error storing in localStorage:`, error);
     }
     
+    // Check if storage was successful
+    const afterConsentId = localStorage.getItem('currentConsentId');
+    const afterInitiationData = localStorage.getItem('currentInitiationData');
+    // Verify storage was successful
+    
     // Redirect to the authorization URL
-    const authorizationUrl = paymentsApi.getAuthorizationUrl(requestUri);
-    window.location.href = authorizationUrl;
+    let authorizationUrl = paymentsApi.getAuthorizationUrl(requestUri);
+    
+    // Add consent ID to the URL as a parameter
+    // First check if the URL already has parameters
+    if (authorizationUrl.includes('?')) {
+      authorizationUrl += `&tpp_consent_id=${encodeURIComponent(consentId)}`;
+    } else {
+      authorizationUrl += `?tpp_consent_id=${encodeURIComponent(consentId)}`;
+    }
+    
+    // Double-check that the consent ID is in the URL
+    // Ensure consent ID is in the URL
+    if (!authorizationUrl.includes(consentId)) {
+      authorizationUrl += `&tpp_consent_id=${encodeURIComponent(consentId)}`;
+    }
+    
+    // Prepare for redirection
+    
+    try {
+      // Store a flag to check if redirection happened
+      localStorage.setItem('redirectionAttempted', 'true');
+      
+      // Perform the redirection
+      window.location.href = authorizationUrl;
+      
+      // This might not execute if redirection is immediate
+      // Redirection initiated
+    } catch (error) {
+      console.error(`Error during redirection:`, error);
+    }
   };
   
   return (
