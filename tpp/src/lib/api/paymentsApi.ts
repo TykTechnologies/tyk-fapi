@@ -204,6 +204,7 @@ const paymentsApi = {
     console.log('Request URI for authorization:', requestUri);
     const url = `${API_URL}/as/authorize?request_uri=${encodeURIComponent(requestUri)}`;
     console.log('Constructed authorization URL:', url);
+    console.log('IMPORTANT: Verify this URL is correctly handled by the API Gateway');
     return url;
   }
 };

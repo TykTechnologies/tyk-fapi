@@ -21,7 +21,10 @@ const accountsApi = {
    */
   getAccounts: async (): Promise<AccountsResponse> => {
     try {
-      const response = await axios.get<AccountsResponse>(`${API_URL}/accounts`);
+      const url = `${API_URL}/accounts`;
+      console.log('Fetching accounts from URL:', url);
+      const response = await axios.get<AccountsResponse>(url);
+      console.log('Accounts API response status:', response.status);
       return response.data;
     } catch (error) {
       console.error('Error fetching accounts:', error);

@@ -16,6 +16,17 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.set('json spaces', 2);
 
+// Request logging middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Query params:', req.query);
+  console.log('Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 // Custom middleware to add FAPI headers and disable caching for all responses
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Add x-fapi-interaction-id if provided in request or generate a new one

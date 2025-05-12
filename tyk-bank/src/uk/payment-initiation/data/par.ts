@@ -12,7 +12,7 @@ export const pushedAuthRequests = new Map<string, PushedAuthorizationRequest>();
 /**
  * Default expiration time for pushed authorization requests (in seconds)
  */
-const DEFAULT_EXPIRATION = 60; // 60 seconds
+const DEFAULT_EXPIRATION = 300; // 5 minutes (increased from 60 seconds for testing)
 
 /**
  * Store a pushed authorization request

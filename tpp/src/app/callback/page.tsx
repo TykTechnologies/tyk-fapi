@@ -179,7 +179,9 @@ export default function CallbackPage() {
       
       // Create the payment
       try {
+        console.log('Creating payment with request:', JSON.stringify(paymentRequest, null, 2));
         const paymentResponse = await createPaymentMutation.mutateAsync(paymentRequest);
+        console.log('Payment creation successful, response:', JSON.stringify(paymentResponse, null, 2));
         
         // Explicitly reset any error state on success
         setError('');

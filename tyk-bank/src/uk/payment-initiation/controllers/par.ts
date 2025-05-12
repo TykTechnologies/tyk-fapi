@@ -37,7 +37,7 @@ export const handlePushedAuthorizationRequest = (req: Request, res: Response) =>
     }
     
     // Store the pushed authorization request
-    const expiresIn = 60; // 60 seconds
+    const expiresIn = 300; // 5 minutes (increased from 60 seconds for testing)
     const request = storePushedAuthRequest(params, expiresIn);
     
     // Return the request URI and expiration time

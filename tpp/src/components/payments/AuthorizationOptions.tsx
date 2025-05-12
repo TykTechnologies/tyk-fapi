@@ -54,6 +54,7 @@ export function AuthorizationOptions({ consent, requestUri, onAuthorized }: Auth
     
     // Redirect to the authorization URL
     let authorizationUrl = paymentsApi.getAuthorizationUrl(requestUri);
+    console.log('Initial authorization URL:', authorizationUrl);
     
     // Add consent ID to the URL as a parameter
     // First check if the URL already has parameters
@@ -62,6 +63,7 @@ export function AuthorizationOptions({ consent, requestUri, onAuthorized }: Auth
     } else {
       authorizationUrl += `?tpp_consent_id=${encodeURIComponent(consentId)}`;
     }
+    console.log('Authorization URL with consent ID:', authorizationUrl);
     
     // Double-check that the consent ID is in the URL
     // Ensure consent ID is in the URL
