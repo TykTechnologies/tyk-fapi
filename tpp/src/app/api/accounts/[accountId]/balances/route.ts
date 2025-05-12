@@ -5,7 +5,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { accountId: string } }
 ) {
-  const { accountId } = params;
+  const { accountId } = await params;
   
   try {
     console.log(`Server-side API route: Fetching balances for account ${accountId} from API Gateway`);

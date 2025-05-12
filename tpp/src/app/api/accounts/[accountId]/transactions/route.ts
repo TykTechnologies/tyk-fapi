@@ -5,7 +5,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { accountId: string } }
 ) {
-  const { accountId } = params;
+  const { accountId } = await params;
   const searchParams = request.nextUrl.searchParams;
   
   // Add cache-busting parameter similar to the client-side implementation

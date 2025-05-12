@@ -15,7 +15,7 @@ export async function PUT(
 ) {
   try {
     // Fix for Next.js error: properly handle params
-    const consentId = params?.consentId;
+    const {consentId} = await params;
     
     if (!consentId) {
       console.error('Missing consentId parameter');
