@@ -23,6 +23,8 @@ This is a monorepo containing multiple sub-applications and components:
 - **tyk-bank/**: Mock bank implementation for testing FAPI compliance
   - Implements UK Open Banking Account Information API
   - Implements UK Open Banking Payment Initiation API (Domestic Payments)
+  - Implements UK Open Banking Event Subscriptions API
+  - Supports event notifications for payment and consent events
   - Supports Docker containerization with microservices architecture
   - Extensible for multiple countries' Open Banking standards
 
@@ -30,6 +32,7 @@ This is a monorepo containing multiple sub-applications and components:
   - NextJS application that connects to the mock bank API
   - Implements FAPI 2.0 security profile with Pushed Authorization Requests (PAR)
   - Demonstrates account information retrieval and payment initiation
+  - Supports receiving event notifications from the bank
   - Supports both automatic and manual authorization flows
 
 - **docs/**: Documentation
@@ -68,6 +71,11 @@ See the [tyk-bank/README.md](tyk-bank/README.md) for instructions on running the
 - Domestic Payments
 - Funds Confirmation
 - Payment Details
+
+**Event Subscriptions API:**
+- Event Subscriptions Management
+- Event Notifications Delivery
+- Support for various payment and consent event types
 
 It can be run directly with Node.js or using Docker containers.
 
