@@ -8,7 +8,6 @@ pipeline:
   processors:
     # Parse the JSON input and extract the event
     - bloblang: |
-        root = this
         meta event_value = content().parse_json().event
 
     # Use sql_select processor for SELECT queries
@@ -27,16 +26,31 @@ pipeline:
             root.debug.sql_error = error()
             root.debug.sql_error_occurred = true
 
-    # Process SQL results - wrap the array in an object
+    # Format each row as a complete message with event information
     - bloblang: |
+        root = this.map_each(url -> {
+          "callback_url": url.callback_url,
+          "event": meta("event_value")
+        })
+
+    # Split the array into individual messages
+    - unarchive:
+        format: json_array
+
+    # Format each message for HTTP client
+    - bloblang: |
+        meta url = this.callback_url
         root = {
-          "event": meta("event_value"),
-          "callback_urls": this,
-          "debug": {
-            "timestamp": timestamp_unix(),
-            "sql_args": [meta("event_value")]
-          }
+          "event": this.event
         }
 
 output:
-  stdout: {}
+  # Output to both stdout and http_client
+  broker:
+    outputs:
+      - stdout: {}
+      - http_client:
+          url: "${! meta(\"url\") }"
+          verb: "POST"
+          headers:
+            Content-Type: "application/json"
