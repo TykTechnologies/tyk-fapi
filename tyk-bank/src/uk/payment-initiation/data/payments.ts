@@ -12,6 +12,11 @@ import { ConsentStatus } from '../models/consent';
 import { TransactionStatus } from '../../account-information/models/transaction';
 import { CreditDebitIndicator } from '../../account-information/models/balance';
 import { getAccountByIdentification } from '../../account-information/data/accounts';
+import {
+  publishPaymentEvent,
+  mapPaymentStatusToEventType,
+  EventType
+} from '../services/event-publisher';
 
 /**
  * Mock payments data
@@ -165,6 +170,17 @@ export const createPayment = (consentId: string): DomesticPayment | undefined =>
     updatePaymentConsentStatus(consentId, ConsentStatus.CONSUMED);
   }, 2000);
   
+  // Publish event for payment creation
+  publishPaymentEvent(EventType.PAYMENT_CREATED, newPayment.DomesticPaymentId, {
+    paymentId: newPayment.DomesticPaymentId,
+    consentId: newPayment.ConsentId,
+    status: newPayment.Status,
+    amount: newPayment.Initiation.InstructedAmount.Amount,
+    currency: newPayment.Initiation.InstructedAmount.Currency
+  }).catch(error => {
+    console.error('Failed to publish payment created event:', error);
+  });
+  
   return newPayment;
 };
 
@@ -175,8 +191,24 @@ export const updatePaymentStatus = (paymentId: string, status: PaymentStatus): D
   const payment = getPaymentById(paymentId);
   
   if (payment) {
+    const oldStatus = payment.Status;
     payment.Status = status;
     payment.StatusUpdateDateTime = new Date().toISOString();
+    
+    // Publish event for payment status change
+    const eventType = mapPaymentStatusToEventType(status);
+    if (eventType) {
+      publishPaymentEvent(eventType, paymentId, {
+        oldStatus,
+        newStatus: status,
+        paymentId,
+        consentId: payment.ConsentId,
+        amount: payment.Initiation.InstructedAmount.Amount,
+        currency: payment.Initiation.InstructedAmount.Currency
+      }).catch(error => {
+        console.error(`Failed to publish payment event for status change to ${status}:`, error);
+      });
+    }
   }
   
   return payment;

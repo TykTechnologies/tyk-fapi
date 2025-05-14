@@ -1,15 +1,21 @@
 import { Request, Response } from 'express';
-import { 
-  createPaymentConsent, 
-  getPaymentConsentById, 
+import {
+  createPaymentConsent,
+  getPaymentConsentById,
   checkFundsAvailability,
   updatePaymentConsentStatus
 } from '../data/consents';
-import { 
-  DomesticPaymentConsentRequest, 
-  ConsentStatus 
+import {
+  DomesticPaymentConsentRequest,
+  ConsentStatus
 } from '../models/consent';
 import { Links, Meta } from '../../../common/types/common';
+import {
+  publishPaymentConsentEvent,
+  publishFundsConfirmationEvent,
+  mapConsentStatusToEventType,
+  EventType
+} from '../services/event-publisher';
 
 /**
  * Create a new domestic payment consent
@@ -68,6 +74,20 @@ export const createDomesticPaymentConsent = (req: Request, res: Response) => {
     
     // The consent will remain in AwaitingAuthorisation status
     // until explicitly authorized via the authorization endpoint
+    
+    // Publish event for consent creation
+    const eventType = mapConsentStatusToEventType(ConsentStatus.AWAITING_AUTHORISATION);
+    if (eventType) {
+      publishPaymentConsentEvent(eventType, newConsent.ConsentId, {
+        consentId: newConsent.ConsentId,
+        status: newConsent.Status,
+        timestamp: newConsent.CreationDateTime,
+        amount: newConsent.Initiation.InstructedAmount.Amount,
+        currency: newConsent.Initiation.InstructedAmount.Currency
+      }).catch(error => {
+        console.error('Failed to publish consent created event:', error);
+      });
+    }
     
     const response = {
       Data: {
@@ -177,6 +197,15 @@ export const getDomesticPaymentConsentFundsConfirmation = (req: Request, res: Re
         TotalPages: 1
       } as Meta
     };
+    
+    // Publish funds confirmation event
+    publishFundsConfirmationEvent(consentId, {
+      consentId,
+      fundsAvailable,
+      timestamp: response.Data.FundsAvailableResult.FundsAvailableDateTime
+    }).catch((error: Error) => {
+      console.error('Failed to publish funds confirmation event:', error);
+    });
     
     res.status(200).json(response);
   } catch (error) {
