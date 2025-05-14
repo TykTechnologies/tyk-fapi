@@ -1,0 +1,42 @@
+input:
+  http_server:
+    address: "0.0.0.0:4196"
+    path: "/events"
+    allowed_verbs: ["POST"]
+
+pipeline:
+  processors:
+    # Parse the JSON input and extract the event
+    - bloblang: |
+        root = this
+        meta event_value = content().parse_json().event
+
+    # Use sql_select processor for SELECT queries
+    - sql_select:
+        driver: "mysql"
+        dsn: "myuser:mypassword@tcp(localhost:3306)/mydatabase"
+        table: "subscriptions"
+        columns: ["callback_url"]
+        where: "event_name = ?"
+        args_mapping: 'root = [meta("event_value")]'
+
+    # Add error handling for SQL errors
+    - catch:
+        - bloblang: |
+            root = this
+            root.debug.sql_error = error()
+            root.debug.sql_error_occurred = true
+
+    # Process SQL results - wrap the array in an object
+    - bloblang: |
+        root = {
+          "event": meta("event_value"),
+          "callback_urls": this,
+          "debug": {
+            "timestamp": timestamp_unix(),
+            "sql_args": [meta("event_value")]
+          }
+        }
+
+output:
+  stdout: {}
