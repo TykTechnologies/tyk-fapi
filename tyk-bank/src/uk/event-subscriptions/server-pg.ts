@@ -99,17 +99,6 @@ const initializeKafka = async () => {
     console.log('Events are disabled. Skipping Kafka initialization.');
     return;
   }
-
-  console.log('Events are enabled. Note: Kafka consumer is disabled - Benthos will handle event consumption.');
-  
-  // Kafka consumer is disabled - Benthos will handle event consumption
-  // try {
-  //   await initializeKafkaConsumer();
-  //   console.log('Kafka consumer initialized successfully');
-  // } catch (error) {
-  //   console.error('Failed to initialize Kafka consumer:', error);
-  //   // Continue running the server even if Kafka initialization fails
-  // }
 };
 
 // Start server
@@ -117,9 +106,6 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Tyk Bank Open Banking - UK Event Subscriptions API (PostgreSQL) running on port ${PORT}`);
     console.log(`Server URL: http://localhost:${PORT}`);
-    
-    // Initialize Kafka after server starts
-    initializeKafka();
   });
 }
 
