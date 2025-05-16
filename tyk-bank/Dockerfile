@@ -34,6 +34,14 @@ CMD if [ "$SERVICE" = "uk-account-information" ]; then \
       # Override default port if not set in environment
       [ -z "$PORT" ] && export PORT=3002; \
       node dist/uk/payment-initiation/server.js; \
+    elif [ "$SERVICE" = "uk-event-subscriptions" ]; then \
+      # Override default port if not set in environment
+      [ -z "$PORT" ] && export PORT=3003; \
+      node dist/uk/event-subscriptions/server.js; \
+    elif [ "$SERVICE" = "uk-event-subscriptions-pg" ]; then \
+      # Override default port if not set in environment
+      [ -z "$PORT" ] && export PORT=3003; \
+      node dist/uk/event-subscriptions/server-pg.js; \
     elif [ "$SERVICE" = "brazil-account-information" ]; then \
       node dist/brazil/account-information/server.js; \
     else \

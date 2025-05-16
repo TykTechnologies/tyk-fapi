@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import subscriptionsRoutes from './routes/subscriptions';
-import eventsRoutes from './routes/events';
-import { initializeKafkaConsumer } from './services/kafka-consumer';
+import subscriptionsRoutes from './routes/subscriptions-pg';
+import eventsRoutes from './routes/events-pg';
+import { initializeKafkaConsumer } from './services/kafka-consumer-pg';
 import { isEventsEnabled } from './services/kafka-producer';
 
 // Create Express app
@@ -47,7 +47,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'UP', version: '1.0.0' });
+  res.status(200).json({ 
+    status: 'UP', 
+    version: '1.0.0',
+    database: 'PostgreSQL',
+    eventBroker: 'Kafka 4.0.0'
+  });
 });
 
 // API routes
@@ -59,12 +64,15 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
     name: 'Tyk Bank - Open Banking Mock Implementation - UK Event Subscriptions API',
     version: '1.0.0',
-    description: 'Mock implementation of the UK Open Banking Event Subscriptions API',
+    description: 'Mock implementation of the UK Open Banking Event Subscriptions API with PostgreSQL and Kafka',
     endpoints: [
       '/event-subscriptions',
       '/event-subscriptions/{EventSubscriptionId}',
-      '/internal/events/publish'
-    ]
+      '/internal/events/publish',
+      '/internal/events/subscriptions/{eventType}'
+    ],
+    storage: 'PostgreSQL',
+    messageBroker: 'Kafka 4.0.0'
   });
 });
 
@@ -85,11 +93,33 @@ app.use((req: Request, res: Response) => {
   });
 });
 
+// Initialize Kafka when the server starts (if events are enabled)
+const initializeKafka = async () => {
+  if (!isEventsEnabled()) {
+    console.log('Events are disabled. Skipping Kafka initialization.');
+    return;
+  }
+
+  console.log('Events are enabled. Note: Kafka consumer is disabled - Benthos will handle event consumption.');
+  
+  // Kafka consumer is disabled - Benthos will handle event consumption
+  // try {
+  //   await initializeKafkaConsumer();
+  //   console.log('Kafka consumer initialized successfully');
+  // } catch (error) {
+  //   console.error('Failed to initialize Kafka consumer:', error);
+  //   // Continue running the server even if Kafka initialization fails
+  // }
+};
+
 // Start server
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Tyk Bank Open Banking - UK Event Subscriptions API running on port ${PORT}`);
+    console.log(`Tyk Bank Open Banking - UK Event Subscriptions API (PostgreSQL) running on port ${PORT}`);
     console.log(`Server URL: http://localhost:${PORT}`);
+    
+    // Initialize Kafka after server starts
+    initializeKafka();
   });
 }
 

@@ -13,8 +13,6 @@ This project provides a mock implementation of Open Banking APIs from multiple c
 - UK Open Banking Event Notifications API
 
 **Planned for Future:**
-- UK Open Banking Payment Initiation API (Additional payment types)
-- Brazil Open Banking APIs
 - Additional country implementations
 
 The mock bank provides endpoints for:
@@ -208,6 +206,8 @@ The project is structured as a collection of microservices, each representing a 
 ## Event Notifications
 
 The mock bank supports event notifications for various payment and consent-related events. TPPs can register callback URLs to receive notifications when these events occur.
+
+For detailed information about the event notification system, see [Event Notifications Documentation](EVENT_NOTIFICATIONS.md).
 
 ### Event Types
 

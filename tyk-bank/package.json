@@ -11,8 +11,10 @@
     "dev:account": "ts-node-dev --respawn --transpile-only src/uk/account-information/server.ts",
     "dev:payment": "ts-node-dev --respawn --transpile-only src/uk/payment-initiation/server.ts",
     "dev:events": "ts-node-dev --respawn --transpile-only src/uk/event-subscriptions/server.ts",
+    "dev:events:pg": "ts-node-dev --respawn --transpile-only src/uk/event-subscriptions/server-pg.ts",
     "dev": "npm run dev:account",
     "dev:all": "concurrently \"npm run dev:account\" \"npm run dev:payment\" \"npm run dev:events\"",
+    "dev:all:pg": "concurrently \"npm run dev:account\" \"npm run dev:payment\" \"npm run dev:events:pg\"",
     "test": "jest",
     "lint": "eslint . --ext .ts"
   },
@@ -31,6 +33,7 @@
     "express": "^4.18.2",
     "kafkajs": "^2.2.4",
     "morgan": "^1.10.0",
+    "pg": "^8.11.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -39,6 +42,7 @@
     "@types/jest": "^29.5.12",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.11.19",
+    "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
