@@ -2,13 +2,20 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -64,11 +71,25 @@ func init() {
 	}
 }
 
+// JWSConfig contains configuration for JWS signing
+type JWSConfig struct {
+	// Path to the private key file (PEM format)
+	PrivateKeyPath string
+	// Private key as a string (PEM format)
+	PrivateKeyString string
+	// Key ID to use in the JWS header
+	KeyID string
+	// Issuer to use in the JWS header
+	Issuer string
+}
+
 // DPoPHandler implements the gRPC server for Tyk
 type DPoPHandler struct {
 	pb.UnimplementedDispatcherServer
-	metrics *IdempotencyMetrics
-	config  IdempotencyConfig
+	metrics    *IdempotencyMetrics
+	config     IdempotencyConfig
+	jwsConfig  JWSConfig
+	privateKey *ecdsa.PrivateKey
 }
 
 // Dispatch handles the gRPC request from Tyk
@@ -80,6 +101,8 @@ func (d *DPoPHandler) Dispatch(ctx context.Context, object *pb.Object) (*pb.Obje
 		return d.IdempotencyCheck(object)
 	case "IdempotencyResponse":
 		return d.IdempotencyResponse(object)
+	case "JWSSign":
+		return d.JWSSign(object)
 	default:
 		log.Warnf("Unknown hook: %s", object.HookName)
 		return object, nil
@@ -147,6 +170,209 @@ func (d *DPoPHandler) GetMetrics() IdempotencyMetrics {
 func (d *DPoPHandler) DispatchEvent(ctx context.Context, event *pb.Event) (*pb.EventReply, error) {
 	// We're not handling events in this plugin
 	return &pb.EventReply{}, nil
+}
+
+// loadPrivateKey loads the private key from file or environment variable
+func (d *DPoPHandler) loadPrivateKey() (*ecdsa.PrivateKey, error) {
+	var keyData []byte
+	var err error
+
+	if d.jwsConfig.PrivateKeyPath != "" {
+		// Load from file
+		keyData, err = os.ReadFile(d.jwsConfig.PrivateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read private key file: %w", err)
+		}
+	} else if d.jwsConfig.PrivateKeyString != "" {
+		// Load from string
+		keyData = []byte(d.jwsConfig.PrivateKeyString)
+	} else {
+		return nil, errors.New("no private key provided")
+	}
+
+	// Parse PEM encoded private key
+	block, _ := pem.Decode(keyData)
+	if block == nil {
+		return nil, errors.New("failed to parse PEM block containing private key")
+	}
+
+	// Parse the key
+	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	return privateKey, nil
+}
+
+// createDetachedJWS creates a detached JWS signature for the given payload
+func (d *DPoPHandler) createDetachedJWS(payload []byte) (string, error) {
+	// Create the JWS header
+	header := map[string]interface{}{
+		"alg":  "ES256",
+		"typ":  "JOSE",
+		"kid":  d.jwsConfig.KeyID,
+		"crit": []string{"b64"},
+		"b64":  false,
+	}
+
+	// Encode the header
+	headerBytes, err := json.Marshal(header)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal header: %w", err)
+	}
+
+	headerEncoded := base64.RawURLEncoding.EncodeToString(headerBytes)
+
+	// Create the signing input (header + . + payload)
+	// For detached JWS, we don't base64 encode the payload
+	hasher := sha256.New()
+	hasher.Write([]byte(headerEncoded + "."))
+	hasher.Write(payload)
+	hash := hasher.Sum(nil)
+
+	// Sign the hash
+	r, s, err := ecdsa.Sign(rand.Reader, d.privateKey, hash)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign payload: %w", err)
+	}
+
+	// Encode the signature
+	curveBits := d.privateKey.Curve.Params().BitSize
+	keyBytes := curveBits / 8
+	if curveBits%8 > 0 {
+		keyBytes++
+	}
+
+	// Serialize r and s into signature
+	signature := make([]byte, keyBytes*2)
+	r.FillBytes(signature[:keyBytes])
+	s.FillBytes(signature[keyBytes:])
+
+	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
+
+	// Create the detached JWS (header..signature)
+	return headerEncoded + ".." + signatureEncoded, nil
+}
+
+// JWSSign implements the JWS signing hook
+func (d *DPoPHandler) JWSSign(object *pb.Object) (*pb.Object, error) {
+	log.Info("Running JWSSign hook")
+
+	// Check if we have a private key
+	if d.privateKey == nil {
+		log.Error("Private key not loaded")
+		return d.respondWithError(object, "JWS signing not configured", http.StatusInternalServerError)
+	}
+
+	// Create JWS signature for the request body
+	signature, err := d.createDetachedJWS([]byte(object.Request.Body))
+	if err != nil {
+		log.Errorf("Failed to create JWS signature: %v", err)
+		return d.respondWithError(object, "Failed to create JWS signature", http.StatusInternalServerError)
+	}
+
+	// Initialize SetHeaders map if nil
+	if object.Request.SetHeaders == nil {
+		object.Request.SetHeaders = map[string]string{}
+	}
+
+	// Add the JWS signature header
+	object.Request.SetHeaders["x-jws-signature"] = signature
+
+	// Get the rewrite target URL from the header
+	rewriteTarget := ""
+	for k, v := range object.Request.Headers {
+		if strings.ToLower(k) == "x-rewrite-target" {
+			rewriteTarget = v
+			break
+		}
+	}
+
+	// If rewrite target URL is present, make the API call and return the response
+	if rewriteTarget != "" {
+		log.Infof("Rewrite target URL found: %s. Making API call...", rewriteTarget)
+
+		// Delete the x-rewrite-target header
+		if object.Request.DeleteHeaders == nil {
+			object.Request.DeleteHeaders = []string{}
+		}
+		object.Request.DeleteHeaders = append(object.Request.DeleteHeaders, "x-rewrite-target")
+
+		// Make the API call to the target URL
+		response, err := d.makeTargetRequest(rewriteTarget, object)
+		if err != nil {
+			log.Errorf("Failed to make target request: %v", err)
+			return d.respondWithError(object, fmt.Sprintf("Failed to make target request: %v", err), http.StatusInternalServerError)
+		}
+
+		log.Info("Target request successful. Returning response.")
+		return response, nil
+	}
+
+	// If no rewrite target URL, just sign the request and continue
+	log.Info("No rewrite target URL found. Continuing with signed request.")
+	return object, nil
+}
+
+// makeTargetRequest makes an HTTP request to the target URL and returns the response
+func (d *DPoPHandler) makeTargetRequest(targetURL string, object *pb.Object) (*pb.Object, error) {
+	// Create a new HTTP client
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create a new HTTP request
+	req, err := http.NewRequest(object.Request.Method, targetURL, strings.NewReader(object.Request.Body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Copy headers from the original request
+	for k, v := range object.Request.Headers {
+		// Skip the x-rewrite-target header
+		if strings.ToLower(k) == "x-rewrite-target" {
+			continue
+		}
+		req.Header.Set(k, v)
+	}
+
+	// Add the JWS signature header
+	req.Header.Set("x-jws-signature", object.Request.SetHeaders["x-jws-signature"])
+
+	// Make the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create a return override with the response
+	if object.Request.ReturnOverrides == nil {
+		object.Request.ReturnOverrides = &pb.ReturnOverrides{}
+	}
+
+	// Set the response code and body
+	object.Request.ReturnOverrides.ResponseCode = int32(resp.StatusCode)
+	object.Request.ReturnOverrides.ResponseBody = string(respBody)
+
+	// Copy response headers
+	if object.Request.ReturnOverrides.Headers == nil {
+		object.Request.ReturnOverrides.Headers = make(map[string]string)
+	}
+	for k, v := range resp.Header {
+		if len(v) > 0 {
+			object.Request.ReturnOverrides.Headers[k] = v[0]
+		}
+	}
+
+	return object, nil
 }
 
 // DPoPCheck implements the pre-auth hook
@@ -602,7 +828,7 @@ func copyMap(m map[string]string) map[string]string {
 }
 
 func main() {
-	log.Info("Starting DPoP gRPC server on :5555")
+	log.Info("Starting FAPI gRPC server on :5555")
 
 	// Initialize the DPoPHandler with metrics and config
 	handler := &DPoPHandler{
@@ -610,6 +836,26 @@ func main() {
 			LastRun: time.Now(),
 		},
 		config: defaultConfig,
+		jwsConfig: JWSConfig{
+			PrivateKeyPath:   os.Getenv("JWS_PRIVATE_KEY_PATH"),
+			PrivateKeyString: os.Getenv("JWS_PRIVATE_KEY"),
+			KeyID:            os.Getenv("JWS_KEY_ID"),
+			Issuer:           os.Getenv("JWS_ISSUER"),
+		},
+	}
+
+	// Load the private key if JWS signing is configured
+	if handler.jwsConfig.PrivateKeyPath != "" || handler.jwsConfig.PrivateKeyString != "" {
+		privateKey, err := handler.loadPrivateKey()
+		if err != nil {
+			log.Warnf("Failed to load JWS private key: %v", err)
+			log.Warn("JWS signing will be disabled")
+		} else {
+			handler.privateKey = privateKey
+			log.Info("JWS private key loaded successfully")
+		}
+	} else {
+		log.Warn("JWS signing not configured (JWS_PRIVATE_KEY_PATH or JWS_PRIVATE_KEY not set)")
 	}
 
 	// Start the garbage collector in a goroutine

@@ -17,3 +17,6 @@ tyk-grpc-plugin
 
 # Go workspace file
 go.work
+
+# Public and private keys
+*.pem
