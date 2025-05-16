@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { getPushedAuthRequest, deletePushedAuthRequest } from '../data/par';
-import { getPaymentConsentById, updatePaymentConsentStatus } from '../data/consents';
+import { getPushedAuthRequest, deletePushedAuthRequest } from '../data/pg-par';
+import { getPaymentConsentById, updatePaymentConsentStatus } from '../data/pg-consents';
 import { ConsentStatus } from '../models/consent';
 import { publishPaymentConsentEvent, mapConsentStatusToEventType } from '../services/event-publisher';
 
@@ -9,7 +9,7 @@ import { publishPaymentConsentEvent, mapConsentStatusToEventType } from '../serv
  * @param req Express request
  * @param res Express response
  */
-export const handleAuthorizationRequest = (req: Request, res: Response) => {
+export const handleAuthorizationRequest = async (req: Request, res: Response) => {
   try {
     console.log('Authorization request received:', {
       method: req.method,
@@ -30,7 +30,7 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
     console.log(`Looking up request_uri: ${request_uri}`);
     
     // Get the pushed authorization request
-    const authRequest = getPushedAuthRequest(request_uri as string);
+    const authRequest = await getPushedAuthRequest(request_uri as string);
     
     if (!authRequest) {
       console.error(`Request URI not found or expired: ${request_uri}`);
@@ -60,7 +60,7 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
     
     if (consentId) {
       // Get the consent
-      const consent = getPaymentConsentById(consentId);
+      const consent = await getPaymentConsentById(consentId);
       
       if (!consent) {
         console.error(`Consent not found: ${consentId}`);
@@ -73,7 +73,7 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
       console.log(`Authorizing consent: ${consentId}`);
       
       // Update the consent status to Authorised
-      const updatedConsent = updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
+      const updatedConsent = await updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
       
       // Publish event for consent authorization
       if (updatedConsent) {
@@ -97,7 +97,7 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
     console.log(`Generated authorization code: ${code}`);
     
     // Delete the pushed authorization request as it's been used
-    deletePushedAuthRequest(authRequest.requestUri);
+    await deletePushedAuthRequest(authRequest.requestUri);
     console.log(`Deleted pushed authorization request: ${authRequest.requestUri}`);
     
     // Redirect back to the client with the authorization code
@@ -121,7 +121,7 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const authorizePaymentConsent = (req: Request, res: Response) => {
+export const authorizePaymentConsent = async (req: Request, res: Response) => {
   try {
     console.log('Payment consent authorization request received:', {
       params: req.params,
@@ -133,7 +133,7 @@ export const authorizePaymentConsent = (req: Request, res: Response) => {
     console.log(`Authorizing payment consent: ${consentId}`);
     
     // Get the consent
-    const consent = getPaymentConsentById(consentId);
+    const consent = await getPaymentConsentById(consentId);
     
     if (!consent) {
       console.error(`Consent not found: ${consentId}`);
@@ -146,7 +146,7 @@ export const authorizePaymentConsent = (req: Request, res: Response) => {
     console.log(`Found consent: ${consentId}, current status: ${consent.Status}`);
     
     // Update the consent status to Authorised
-    const updatedConsent = updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
+    const updatedConsent = await updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
     
     // Publish event for consent authorization
     if (updatedConsent) {

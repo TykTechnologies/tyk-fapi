@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { storePushedAuthRequest, getPushedAuthRequest } from '../data/par';
+import { storePushedAuthRequest, getPushedAuthRequest } from '../data/pg-par';
 import { AuthorizationRequestParams } from '../models/par';
 
 /**
@@ -7,7 +7,7 @@ import { AuthorizationRequestParams } from '../models/par';
  * @param req Express request
  * @param res Express response
  */
-export const handlePushedAuthorizationRequest = (req: Request, res: Response) => {
+export const handlePushedAuthorizationRequest = async (req: Request, res: Response) => {
   try {
     // In a real implementation, we would validate client authentication here
     // For demo purposes, we'll skip this step
@@ -38,7 +38,7 @@ export const handlePushedAuthorizationRequest = (req: Request, res: Response) =>
     
     // Store the pushed authorization request
     const expiresIn = 300; // 5 minutes (increased from 60 seconds for testing)
-    const request = storePushedAuthRequest(params, expiresIn);
+    const request = await storePushedAuthRequest(params, expiresIn);
     
     // Return the request URI and expiration time
     res.status(201).json({
@@ -59,12 +59,12 @@ export const handlePushedAuthorizationRequest = (req: Request, res: Response) =>
  * @param req Express request
  * @param res Express response
  */
-export const getAuthorizationRequest = (req: Request, res: Response) => {
+export const getAuthorizationRequest = async (req: Request, res: Response) => {
   try {
     const { requestUri } = req.params;
     
     // Get the pushed authorization request
-    const request = getPushedAuthRequest(requestUri);
+    const request = await getPushedAuthRequest(requestUri);
     
     if (!request) {
       return res.status(404).json({

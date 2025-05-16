@@ -3,8 +3,8 @@ import {
   createPayment, 
   getPaymentById, 
   getPaymentDetails 
-} from '../data/payments';
-import { getPaymentConsentById } from '../data/consents';
+} from '../data/pg-payments';
+import { getPaymentConsentById } from '../data/pg-consents';
 import { DomesticPaymentRequest } from '../models/payment';
 import { ConsentStatus } from '../models/consent';
 import { Links, Meta } from '../../../common/types/common';
@@ -14,12 +14,16 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const createDomesticPayment = (req: Request, res: Response) => {
+export const createDomesticPayment = async (req: Request, res: Response) => {
   try {
+    console.log('=== Starting domestic payment creation ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const paymentRequest = req.body as DomesticPaymentRequest;
     
     // Validate request body
     if (!paymentRequest?.Data?.ConsentId) {
+      console.log('Error: ConsentId is missing in the request');
       return res.status(400).json({
         ErrorCode: 'InvalidRequest',
         ErrorMessage: 'ConsentId is required'
@@ -27,10 +31,11 @@ export const createDomesticPayment = (req: Request, res: Response) => {
     }
     
     const { ConsentId } = paymentRequest.Data;
+    console.log(`Processing payment for ConsentId: ${ConsentId}`);
     
     // Check if consent exists
-    const consent = getPaymentConsentById(ConsentId);
-    console.log(`Creating payment for consent ${ConsentId}, consent status: ${consent?.Status}`);
+    const consent = await getPaymentConsentById(ConsentId);
+    console.log(`Consent lookup result: ${consent ? 'Found' : 'Not found'}, status: ${consent?.Status}`);
     
     if (!consent) {
       console.log(`Consent with ID ${ConsentId} not found`);
@@ -50,15 +55,19 @@ export const createDomesticPayment = (req: Request, res: Response) => {
     }
     
     // Create new payment
-    const newPayment = createPayment(ConsentId);
+    console.log('Consent validation passed, creating payment...');
+    const newPayment = await createPayment(ConsentId);
+    console.log('Payment creation result:', newPayment ? 'Success' : 'Failed');
     
     if (!newPayment) {
+      console.log('Payment creation returned null or undefined');
       return res.status(400).json({
         ErrorCode: 'PaymentCreationFailed',
         ErrorMessage: 'Failed to create payment'
       });
     }
     
+    console.log('Building response with payment details');
     const response = {
       Data: {
         DomesticPaymentId: newPayment.DomesticPaymentId,
@@ -78,12 +87,20 @@ export const createDomesticPayment = (req: Request, res: Response) => {
       } as Meta
     };
     
+    console.log('Sending successful response with status 201');
     res.status(201).json(response);
   } catch (error) {
     console.error('Error creating domestic payment:', error);
+    console.error('Error details:', error instanceof Error ? error.stack : 'Unknown error type');
+    
+    // More specific error message for debugging
+    const errorMessage = error instanceof Error
+      ? `Failed to create payment: ${error.message}`
+      : 'An internal server error occurred';
+    
     res.status(500).json({
       ErrorCode: 'InternalServerError',
-      ErrorMessage: 'An internal server error occurred'
+      ErrorMessage: errorMessage
     });
   }
 };
@@ -93,10 +110,10 @@ export const createDomesticPayment = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getDomesticPayment = (req: Request, res: Response) => {
+export const getDomesticPayment = async (req: Request, res: Response) => {
   try {
     const { paymentId } = req.params;
-    const payment = getPaymentById(paymentId);
+    const payment = await getPaymentById(paymentId);
     
     if (!payment) {
       return res.status(404).json({
@@ -141,10 +158,10 @@ export const getDomesticPayment = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getDomesticPaymentDetails = (req: Request, res: Response) => {
+export const getDomesticPaymentDetails = async (req: Request, res: Response) => {
   try {
     const { paymentId } = req.params;
-    const paymentDetails = getPaymentDetails(paymentId);
+    const paymentDetails = await getPaymentDetails(paymentId);
     
     if (!paymentDetails) {
       return res.status(404).json({

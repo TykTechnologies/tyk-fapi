@@ -12,6 +12,11 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - SERVICE=uk-account-information
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
@@ -19,6 +24,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    depends_on:
+      - postgres
 
   # UK Open Banking - Payment Initiation API
   uk-payment-initiation:
@@ -33,14 +40,14 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - SERVICE=uk-payment-initiation
-      - ENABLE_EVENTS=true
-      - KAFKA_BROKER=kafka:9092
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=tyk_bank
-      - DB_PASSWORD=tyk_bank_password
-      - DB_NAME=tyk_bank
-      - EVENT_SERVICE_URL=http://uk-event-subscriptions:3003
+      - ENABLE_EVENTS=${ENABLE_EVENTS}
+      - KAFKA_BROKER=${KAFKA_BROKER}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - EVENT_SERVICE_URL=${EVENT_SERVICE_URL}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
@@ -65,13 +72,13 @@ services:
       - NODE_ENV=production
       - PORT=3003
       - SERVICE=uk-event-subscriptions-pg
-      - ENABLE_EVENTS=true
-      - KAFKA_BROKER=kafka:9092
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=tyk_bank
-      - DB_PASSWORD=tyk_bank_password
-      - DB_NAME=tyk_bank
+      - ENABLE_EVENTS=${ENABLE_EVENTS}
+      - KAFKA_BROKER=${KAFKA_BROKER}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
@@ -89,9 +96,9 @@ services:
     container_name: postgres
     restart: always
     environment:
-      POSTGRES_USER: tyk_bank
-      POSTGRES_PASSWORD: tyk_bank_password
-      POSTGRES_DB: tyk_bank
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:

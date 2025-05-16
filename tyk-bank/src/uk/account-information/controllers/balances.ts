@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { getAllBalances, getBalancesByAccountId } from '../data/balances';
-import { getAccountById as fetchAccountById } from '../data/accounts';
+import { getAllBalances, getBalancesByAccountId } from '../data/pg-balances';
+import { getAccountById as fetchAccountById } from '../data/pg-accounts';
 import { Links, Meta } from '../../../common/types/common';
 
 /**
@@ -8,9 +8,9 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const getBalances = (req: Request, res: Response) => {
+export const getBalances = async (req: Request, res: Response) => {
   try {
-    const balances = getAllBalances();
+    const balances = await getAllBalances();
     
     const response = {
       Data: {
@@ -39,12 +39,12 @@ export const getBalances = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getBalancesByAccount = (req: Request, res: Response) => {
+export const getBalancesByAccount = async (req: Request, res: Response) => {
   try {
     const { accountId } = req.params;
     
     // Check if account exists
-    const account = fetchAccountById(accountId);
+    const account = await fetchAccountById(accountId);
     if (!account) {
       return res.status(404).json({
         ErrorCode: 'ResourceNotFound',
@@ -52,7 +52,7 @@ export const getBalancesByAccount = (req: Request, res: Response) => {
       });
     }
     
-    const balances = getBalancesByAccountId(accountId);
+    const balances = await getBalancesByAccountId(accountId);
     
     const response = {
       Data: {

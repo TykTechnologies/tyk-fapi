@@ -4,8 +4,8 @@ import {
   getTransactionsByAccountId,
   getTransactionsByAccountIdAndDateRange,
   createTransaction
-} from '../data/transactions';
-import { getAccountById as fetchAccountById } from '../data/accounts';
+} from '../data/pg-transactions';
+import { getAccountById as fetchAccountById } from '../data/pg-accounts';
 import { Links, Meta } from '../../../common/types/common';
 
 /**
@@ -13,7 +13,7 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const getTransactions = (req: Request, res: Response) => {
+export const getTransactions = async (req: Request, res: Response) => {
   try {
     const { fromBookingDateTime, toBookingDateTime } = req.query;
     
@@ -28,7 +28,7 @@ export const getTransactions = (req: Request, res: Response) => {
       });
     }
     
-    const transactions = getAllTransactions();
+    const transactions = await getAllTransactions();
     
     const response = {
       Data: {
@@ -57,13 +57,13 @@ export const getTransactions = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getTransactionsByAccount = (req: Request, res: Response) => {
+export const getTransactionsByAccount = async (req: Request, res: Response) => {
   try {
     const { accountId } = req.params;
     const { fromBookingDateTime, toBookingDateTime } = req.query;
     
     // Check if account exists
-    const account = fetchAccountById(accountId);
+    const account = await fetchAccountById(accountId);
     if (!account) {
       return res.status(404).json({
         ErrorCode: 'ResourceNotFound',
@@ -83,7 +83,7 @@ export const getTransactionsByAccount = (req: Request, res: Response) => {
     }
     
     // Get transactions with optional date filtering
-    const transactions = getTransactionsByAccountIdAndDateRange(
+    const transactions = await getTransactionsByAccountIdAndDateRange(
       accountId,
       fromBookingDateTime as string | undefined,
       toBookingDateTime as string | undefined
@@ -91,11 +91,6 @@ export const getTransactionsByAccount = (req: Request, res: Response) => {
     
     console.log(`[DEBUG] Transactions for account ${accountId}:`, JSON.stringify(transactions, null, 2));
     console.log(`[DEBUG] Total transactions found: ${transactions.length}`);
-    
-    // Log all transactions in the system to see if our new ones are there
-    const allTransactions = getAllTransactions();
-    console.log(`[DEBUG] All transactions in the system: ${allTransactions.length}`);
-    console.log(`[DEBUG] All transactions with AccountId '${accountId}': ${allTransactions.filter(t => t.AccountId === accountId).length}`);
     
     const response = {
       Data: {
@@ -130,7 +125,7 @@ export const getTransactionsByAccount = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const createTransactionFromPayment = (req: Request, res: Response) => {
+export const createTransactionFromPayment = async (req: Request, res: Response) => {
   try {
     const transactionData = req.body;
     
@@ -143,7 +138,7 @@ export const createTransactionFromPayment = (req: Request, res: Response) => {
     }
     
     // Check if account exists
-    const account = fetchAccountById(transactionData.AccountId);
+    const account = await fetchAccountById(transactionData.AccountId);
     if (!account) {
       return res.status(404).json({
         ErrorCode: 'ResourceNotFound',
@@ -154,7 +149,7 @@ export const createTransactionFromPayment = (req: Request, res: Response) => {
     console.log(`Creating transaction for account ${transactionData.AccountId} from payment API`);
     
     // Create the transaction
-    const newTransaction = createTransaction(transactionData);
+    const newTransaction = await createTransaction(transactionData);
     
     res.status(201).json({
       Data: {
