@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getAllAccounts, getAccountById as fetchAccountById } from '../data/accounts';
+import { getAllAccounts, getAccountById as fetchAccountById } from '../data/pg-accounts';
 import { Links, Meta } from '../../../common/types/common';
 
 /**
@@ -7,9 +7,9 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const getAccounts = (req: Request, res: Response) => {
+export const getAccounts = async (req: Request, res: Response) => {
   try {
-    const accounts = getAllAccounts();
+    const accounts = await getAllAccounts();
     
     const response = {
       Data: {
@@ -38,10 +38,10 @@ export const getAccounts = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getAccountById = (req: Request, res: Response) => {
+export const getAccountById = async (req: Request, res: Response) => {
   try {
     const { accountId } = req.params;
-    const account = fetchAccountById(accountId);
+    const account = await fetchAccountById(accountId);
     
     if (!account) {
       return res.status(404).json({

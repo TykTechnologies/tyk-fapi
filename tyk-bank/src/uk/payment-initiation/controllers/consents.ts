@@ -4,7 +4,7 @@ import {
   getPaymentConsentById,
   checkFundsAvailability,
   updatePaymentConsentStatus
-} from '../data/consents';
+} from '../data/pg-consents';
 import {
   DomesticPaymentConsentRequest,
   ConsentStatus
@@ -22,7 +22,7 @@ import {
  * @param req Express request
  * @param res Express response
  */
-export const createDomesticPaymentConsent = (req: Request, res: Response) => {
+export const createDomesticPaymentConsent = async (req: Request, res: Response) => {
   try {
     const consentRequest = req.body as DomesticPaymentConsentRequest;
     
@@ -67,7 +67,7 @@ export const createDomesticPaymentConsent = (req: Request, res: Response) => {
     }
     
     // Create new consent
-    const newConsent = createPaymentConsent(
+    const newConsent = await createPaymentConsent(
       Initiation,
       consentRequest.Risk || {}
     );
@@ -123,10 +123,10 @@ export const createDomesticPaymentConsent = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getDomesticPaymentConsent = (req: Request, res: Response) => {
+export const getDomesticPaymentConsent = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
-    const consent = getPaymentConsentById(consentId);
+    const consent = await getPaymentConsentById(consentId);
     
     if (!consent) {
       return res.status(404).json({
@@ -168,10 +168,10 @@ export const getDomesticPaymentConsent = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getDomesticPaymentConsentFundsConfirmation = (req: Request, res: Response) => {
+export const getDomesticPaymentConsentFundsConfirmation = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
-    const consent = getPaymentConsentById(consentId);
+    const consent = await getPaymentConsentById(consentId);
     
     if (!consent) {
       return res.status(404).json({
@@ -181,7 +181,7 @@ export const getDomesticPaymentConsentFundsConfirmation = (req: Request, res: Re
     }
     
     // Check funds availability
-    const fundsAvailable = checkFundsAvailability(consentId);
+    const fundsAvailable = await checkFundsAvailability(consentId);
     
     const response = {
       Data: {

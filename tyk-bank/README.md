@@ -35,6 +35,7 @@ The project follows a country-first organization structure to accommodate multip
 tyk-bank/
 ├── src/
 │   ├── common/                      # Shared utilities and types
+│   │   └── db/                      # Database connection module
 │   ├── uk/                          # UK Open Banking
 │   │   ├── account-information/     # Account Information API
 │   │   ├── payment-initiation/      # Payment Initiation API
@@ -50,6 +51,40 @@ tyk-bank/
 - Node.js (v14 or later)
 - npm (v6 or later)
 - Docker and Docker Compose (optional, for containerized deployment)
+- PostgreSQL (included in Docker Compose setup)
+
+### Environment Variables
+
+The project uses a `.env` file to store configuration variables. A `.env.example` file is provided as a template:
+
+```
+# Database Configuration
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=tyk_bank
+DB_PASSWORD=your_secure_password
+DB_NAME=tyk_bank
+
+# Kafka Configuration
+KAFKA_BROKER=kafka:9092
+
+# Event Service Configuration
+EVENT_SERVICE_URL=http://uk-event-subscriptions:3003
+
+# Enable Events
+ENABLE_EVENTS=true
+```
+
+To set up your environment:
+
+1. Copy the example file to create your own `.env` file:
+   ```
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file to customize the values for your environment.
+
+The Docker Compose configuration will automatically use these environment variables. The `.env` file is excluded from version control to keep sensitive information secure.
 
 ### Installation
 
@@ -137,6 +172,42 @@ To stop the containers:
 ```
 docker-compose down
 ```
+
+## Database
+
+The mock bank uses PostgreSQL to store data for all services. This provides a more realistic implementation and allows for data persistence between service restarts.
+
+### Database Schema
+
+The database schema includes tables for:
+- Accounts
+- Balances
+- Transactions
+- Payment Consents
+- Payments
+- Event Subscriptions
+
+The schema is automatically created when the services start up using the initialization scripts in the `init-scripts` directory.
+
+### Database Configuration
+
+The database connection is configured using environment variables in the `.env` file:
+- `DB_HOST`: PostgreSQL host (default: 'postgres')
+- `DB_PORT`: PostgreSQL port (default: '5432')
+- `DB_USER`: PostgreSQL user (default: 'tyk_bank')
+- `DB_PASSWORD`: PostgreSQL password (default: 'tyk_bank_password')
+- `DB_NAME`: PostgreSQL database name (default: 'tyk_bank')
+
+When running without Docker Compose, you can set these environment variables directly:
+
+```bash
+# Example for running the Account Information service with custom database settings
+DB_HOST=custom-host DB_PORT=5433 DB_USER=custom-user DB_PASSWORD=custom-password DB_NAME=custom-db npm run dev:account
+```
+
+### Database Management
+
+The Docker Compose setup includes Adminer, a web-based database management tool, which can be accessed at http://localhost:3432 when running with Docker Compose.
 
 ## Microservices
 
@@ -246,6 +317,8 @@ The mock bank comes pre-populated with sample data:
 - Sample domestic payment consents
 - Sample domestic payments
 
+This data is seeded into the PostgreSQL database when the services start up.
+
 ## Security
 
 This mock implementation includes basic FAPI 2.0 security profile features:
@@ -264,3 +337,13 @@ The Payment Initiation API implements key aspects of the FAPI 2.0 Security Profi
 - **Consent Management**: Payment consents must be explicitly authorized before payments can be created.
 
 These features enhance security by reducing the exposure of sensitive parameters and providing a more robust authorization flow.
+
+## Microservice Communication
+
+The microservices now communicate through the shared PostgreSQL database:
+
+- The Payment Initiation Service creates payment records in the database
+- The Account Information Service reads these records to provide transaction information
+- The Event Subscriptions Service uses the database to store and manage event subscriptions
+
+This approach provides better data consistency and eliminates the need for direct API calls between services.

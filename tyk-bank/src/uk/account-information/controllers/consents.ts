@@ -5,7 +5,7 @@ import {
   createConsent, 
   updateConsentStatus, 
   deleteConsent 
-} from '../data/consents';
+} from '../data/pg-consents';
 import { ConsentRequest, ConsentStatus, PermissionType } from '../models/consent';
 import { Links, Meta } from '../../../common/types/common';
 
@@ -14,7 +14,7 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const createAccountAccessConsent = (req: Request, res: Response) => {
+export const createAccountAccessConsent = async (req: Request, res: Response) => {
   try {
     const consentRequest = req.body as ConsentRequest;
     
@@ -39,7 +39,7 @@ export const createAccountAccessConsent = (req: Request, res: Response) => {
     }
     
     // Create new consent
-    const newConsent = createConsent(
+    const newConsent = await createConsent(
       consentRequest.Data.Permissions as PermissionType[],
       consentRequest.Data.ExpirationDateTime,
       consentRequest.Data.TransactionFromDateTime,
@@ -81,10 +81,10 @@ export const createAccountAccessConsent = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const getAccountAccessConsent = (req: Request, res: Response) => {
+export const getAccountAccessConsent = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
-    const consent = getConsentById(consentId);
+    const consent = await getConsentById(consentId);
     
     if (!consent) {
       return res.status(404).json({
@@ -128,10 +128,10 @@ export const getAccountAccessConsent = (req: Request, res: Response) => {
  * @param req Express request
  * @param res Express response
  */
-export const deleteAccountAccessConsent = (req: Request, res: Response) => {
+export const deleteAccountAccessConsent = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
-    const consent = getConsentById(consentId);
+    const consent = await getConsentById(consentId);
     
     if (!consent) {
       return res.status(404).json({
@@ -141,7 +141,7 @@ export const deleteAccountAccessConsent = (req: Request, res: Response) => {
     }
     
     // Delete consent
-    const deleted = deleteConsent(consentId);
+    const deleted = await deleteConsent(consentId);
     
     if (deleted) {
       res.status(204).send();
