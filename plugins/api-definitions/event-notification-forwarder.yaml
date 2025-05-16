@@ -1,0 +1,31 @@
+info:
+  title: Event Notification Forwarder
+  version: 1.0.0
+  description: API for forwarding event notifications with JWS signatures
+openapi: 3.0.3
+paths: {}
+servers:
+  - url: http://gateway.ahmet:8080/event-notifications/
+x-tyk-api-gateway:
+  info:
+    name: Event Notification Forwarder
+    state:
+      active: true
+  middleware:
+    global:
+      contextVariables:
+        enabled: true
+      pluginConfig:
+        driver: grpc
+      prePlugins:
+        - enabled: true
+          functionName: JWSSign
+          path: ''
+      trafficLogs:
+        enabled: true
+  server:
+    listenPath:
+      strip: true
+      value: /event-notifications-forwarder/
+  upstream:
+    url: https://httpbin.org/anything
