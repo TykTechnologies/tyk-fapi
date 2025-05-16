@@ -17,7 +17,7 @@ flowchart TB
         Demonstrates how a TPP would interact with a bank's API"]
         apiGateway["API Gateway
         (Tyk Gateway)
-        Routes requests to the appropriate backend services"]
+        Routes requests and handles event notifications"]
         authServer["Authorization Server
         (Keycloak)
         Handles authentication and authorization"]
@@ -53,8 +53,11 @@ flowchart TB
     (SQL)"| database
     tykBank -->|"Publishes events to
     (Kafka Protocol)"| kafka
-    kafka -->|"Sends notifications to
-    (HTTPS Webhooks)"| tppApp
+    
+    %% Event notification flow
+    kafka -->|"Subscribes to events"| apiGateway
+    apiGateway -->|"Sends signed notifications
+    (JWS/HTTPS Webhooks)"| tppApp
     
     %% Styling
     classDef person fill:#08427B,color:#fff,stroke:#052E56
@@ -76,7 +79,7 @@ The container diagram shows the major components of the Tyk FAPI Accelerator:
 
 1. **TPP Application**: A NextJS application that demonstrates how a third-party provider would interact with a bank's API. It provides a user interface for viewing account information, initiating payments, and testing authorization flows.
 
-2. **API Gateway**: The Tyk Gateway that routes requests to the appropriate backend services. Based on the API analysis, it's configured to handle account information and payment initiation requests, with endpoints for accounts, balances, transactions, and more.
+2. **API Gateway**: The Tyk Gateway that routes requests to the appropriate backend services and handles event notifications. It subscribes to Kafka events and dispatches those events to subscribed TPPs, signing the webhook requests using JWS (JSON Web Signature) to ensure authenticity.
 
 3. **Authorization Server**: A Keycloak instance that handles authentication and authorization. It supports OAuth 2.0 and OpenID Connect protocols, and is responsible for issuing tokens and managing consent.
 
@@ -94,4 +97,14 @@ The diagram also shows the key relationships between these components, including
 - The Authorization Server verifies consents with the Tyk Bank
 - The Tyk Bank reads from and writes to the Database
 - The Tyk Bank publishes events to the Message Broker
-- The Message Broker sends notifications to the TPP Application
+
+### Event Notification Flow
+
+The event notification flow is handled as follows:
+
+1. The Tyk Bank publishes events to Kafka when significant events occur (e.g., payment status changes)
+2. The API Gateway subscribes to these Kafka events
+3. The API Gateway determines which TPPs should receive the notifications based on their subscriptions
+4. The API Gateway signs the webhook requests using JSON Web Signature (JWS)
+5. The signed notifications are sent to the appropriate TPPs
+6. TPPs can verify the authenticity of the webhooks using the JWS signature, ensuring they haven't been tampered with

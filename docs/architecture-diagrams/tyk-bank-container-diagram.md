@@ -20,8 +20,6 @@ flowchart TB
         Handles payment consents and payments"]
         eventSubs["Event Subscriptions API
         Manages callback URL registrations"]
-        streamProcessor["Stream Processor
-        Routes events to registered TPPs"]
         database[(Database)]
         databaseLabel["PostgreSQL
         Stores account, payment, and subscription data"]
@@ -56,12 +54,10 @@ flowchart TB
     eventSubs -->|"Publishes subscription events
     (Kafka Protocol)"| kafka
     
-    kafka -->|"Consumes events
-    (Kafka Protocol)"| streamProcessor
-    database -->|"Queries subscriptions
-    (SQL)"| streamProcessor
-    streamProcessor -->|"Sends notifications
-    (HTTPS Webhooks)"| tppApp
+    %% Event notification flow
+    kafka -->|"Subscribes to events"| apiGateway
+    apiGateway -->|"Sends signed notifications
+    (JWS/HTTPS Webhooks)"| tppApp
     
     %% Styling
     classDef external fill:#999999,color:#fff,stroke:#6B6B6B
@@ -71,7 +67,7 @@ flowchart TB
     classDef label fill:none,stroke:none
     
     class apiGateway,authServer,tppApp external
-    class accountInfo,paymentInit,eventSubs,streamProcessor component
+    class accountInfo,paymentInit,eventSubs component
     class database database
     class kafka queue
     class databaseLabel,kafkaLabel label
@@ -87,11 +83,9 @@ The Tyk Bank container diagram shows the internal components of the mock bank im
 
 3. **Event Subscriptions API**: Manages callback URL registrations from TPPs. It allows TPPs to register for notifications when certain events occur.
 
-4. **Stream Processor**: Routes events to registered TPPs. It consumes events from Kafka, queries the database for active subscriptions, and sends notifications to the registered TPPs.
+4. **Database**: A PostgreSQL database that stores account information, payment data, and event subscriptions.
 
-5. **Database**: A PostgreSQL database that stores account information, payment data, and event subscriptions.
-
-6. **Message Broker**: A Kafka instance that handles event messages, allowing different components to communicate asynchronously.
+5. **Message Broker**: A Kafka instance that handles event messages, allowing different components to communicate asynchronously.
 
 The diagram also shows the key relationships between these components:
 
@@ -99,13 +93,22 @@ The diagram also shows the key relationships between these components:
 - The Authorization Server verifies consents with the Payment Initiation API
 - All API components read from and write to the Database
 - The Payment Initiation API and Event Subscriptions API publish events to Kafka
-- The Stream Processor consumes events from Kafka
-- The Stream Processor queries the Database for active subscriptions
-- The Stream Processor sends notifications to the TPP Application
+
+### Event Notification Flow
+
+The event notification flow has been simplified to show:
+
+1. The Payment Initiation API and Event Subscriptions API publish events to Kafka when significant events occur (e.g., payment status changes)
+2. The API Gateway subscribes to these Kafka events
+3. The API Gateway determines which TPPs should receive the notifications based on their subscriptions
+4. The API Gateway signs the webhook requests using JSON Web Signature (JWS)
+5. The signed notifications are sent to the appropriate TPPs
+6. TPPs can verify the authenticity of the webhooks using the JWS signature, ensuring they haven't been tampered with
 
 This architecture provides several benefits:
 
 - Separation of concerns between different API domains
 - Asynchronous event processing with Kafka
 - Persistent storage of subscriptions in PostgreSQL
-- Scalable webhook delivery through the Stream Processor
+- Secure webhook delivery through JWS signing
+- Centralized event routing and delivery through the API Gateway
