@@ -277,16 +277,36 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
         }
       }, 2000);
       
-      // Get the full payment details to return
-      console.log(`Retrieving created payment with ID: ${paymentId}`);
-      const createdPayment = await getPaymentById(paymentId);
+      // Get the full payment details to return within the same transaction
+      console.log(`Retrieving created payment with ID: ${paymentId} within the transaction`);
       
-      if (!createdPayment) {
-        console.error(`Failed to retrieve created payment with ID: ${paymentId}`);
+      // Use the transaction client to retrieve the payment instead of a separate connection
+      const paymentResult = await client.query(`
+        SELECT
+          p.payment_id, p.consent_id, p.creation_date_time, p.status,
+          p.status_update_date_time, p.expected_execution_date_time, p.expected_settlement_date_time,
+          pc.instruction_identification, pc.end_to_end_identification,
+          pc.instructed_amount_amount, pc.instructed_amount_currency,
+          pc.creditor_account_scheme_name, pc.creditor_account_identification, pc.creditor_account_name,
+          pc.creditor_account_secondary_identification,
+          pc.remittance_information_reference, pc.remittance_information_unstructured
+        FROM
+          payments p
+        JOIN
+          payment_consents pc ON p.consent_id = pc.consent_id
+        WHERE
+          p.payment_id = $1
+      `, [paymentId]);
+      
+      console.log(`Query result: Found ${paymentResult.rows.length} matching payments`);
+      
+      if (paymentResult.rows.length === 0) {
+        console.error(`Failed to retrieve created payment with ID: ${paymentId} within transaction`);
         throw new Error('Failed to retrieve created payment');
       }
       
-      console.log('Payment created and retrieved successfully');
+      const createdPayment = rowToPayment(paymentResult.rows[0]);
+      console.log('Payment created and retrieved successfully within transaction');
       
       // Publish event for payment creation
       console.log('Publishing payment created event');
