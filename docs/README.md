@@ -1,46 +1,51 @@
-# Tyk FAPI Accelerator Documentation
+# Tyk FAPI Accelerator - Architecture Diagrams
 
-This directory contains comprehensive documentation for the Tyk FAPI Accelerator, focusing on the architecture, integration, and flows.
+This directory contains architecture diagrams for the Tyk FAPI Accelerator project. The diagrams follow C4 model principles but are implemented using standard Mermaid syntax for better compatibility with GitHub and other Markdown renderers.
 
-## Documentation Overview
+## Context Diagram
 
-- [System Architecture](./architecture.md) - Overview of the system architecture and how the different components interact with each other.
-- [TPP Integration](./tpp-integration.md) - Detailed information about how the Third-Party Provider (TPP) integrates with the API Gateway and Authorization Server.
-- [Payment Flow](./payment-flow.md) - Detailed explanation of the payment flow in the Tyk FAPI Accelerator, focusing on how the TPP initiates and completes a payment.
-- [Authorization Options](./authorization-options.md) - Comparison of automatic vs manual authorization options available in the TPP application.
+- [Context Diagram](context-diagram.md) - Shows the Tyk FAPI Accelerator system in its environment, including users, external systems, and key actors.
 
-## System Components
+## Container Diagrams
 
-The Tyk FAPI Accelerator consists of the following main components:
+- [Overall Container Diagram](container-diagram.md) - Shows all major components of the Tyk FAPI Accelerator and their interactions.
+- [TPP Application Container Diagram](tpp-application-container-diagram.md) - Shows the internal structure of the TPP Application.
+- [Tyk Bank Container Diagram](tyk-bank-container-diagram.md) - Shows the internal structure of the Tyk Bank component, including the event notification system.
+- [API Gateway Container Diagram](api-gateway-container-diagram.md) - Shows the internal structure of the API Gateway component.
+- [Authorization Server Container Diagram](authorization-server-container-diagram.md) - Shows the internal structure of the Authorization Server component.
 
-1. **TPP (Third-Party Provider)** - A NextJS application that acts as a client to the bank's API.
-2. **API Gateway** - Routes requests to the appropriate backend services.
-3. **Authorization Server** - Handles authentication and authorization.
-4. **Tyk Bank** - A mock bank implementation that provides the backend services.
+## Sequence Diagrams
 
-## Key Features
+- [Payment Flow Sequence Diagram](payment-flow-sequence-diagram.md) - Shows the sequence of interactions during a payment flow.
+- [Event Notification Sequence Diagram](event-notification-sequence-diagram.md) - Shows the sequence of interactions during the event notification process.
 
-- Implementation of FAPI 2.0 security profile
-- Pushed Authorization Requests (PAR)
-- Account information retrieval
-- Payment initiation
-- Both automatic and manual authorization flows
-- Mock bank implementation for testing
+## How to View These Diagrams
 
-## Getting Started
+These diagrams use Mermaid syntax and can be viewed in several ways:
 
-To get started with the Tyk FAPI Accelerator, see the following README files:
+1. **GitHub Rendering**: GitHub natively supports Mermaid diagrams in markdown files. Simply view the files in GitHub to see the rendered diagrams.
 
-- [TPP README](../tpp/README.md) - Instructions for running the TPP application
-- [Tyk Bank README](../tyk-bank/README.md) - Instructions for running the mock bank
-- [Authorization Server README](../authorization-servers/README.md) - Instructions for setting up the authorization server
+2. **VS Code Extensions**: Install a Mermaid preview extension in VS Code to view the diagrams locally. Recommended extensions include:
+   - "Markdown Preview Mermaid Support"
+   - "Mermaid Markdown Syntax Highlighting"
+   - "Mermaid Preview"
 
-## Diagrams
+3. **Mermaid Live Editor**: Copy the Mermaid code and paste it into the [Mermaid Live Editor](https://mermaid.live/) to view and export the diagrams.
 
-The documentation includes several diagrams to help visualize the architecture and flows:
+## Updating the Diagrams
 
-- System architecture diagram
-- Payment flow sequence diagram
-- Authorization options comparison diagram
+To update these diagrams:
 
-These diagrams are created using Mermaid and can be viewed directly in GitHub or any Markdown viewer that supports Mermaid.
+1. Edit the Mermaid code in the respective markdown files
+2. Commit the changes to GitHub
+3. The diagrams will be automatically rendered when viewing the files in GitHub
+
+## API Analysis
+
+The diagrams are based on an analysis of the API structure in the Tyk API Gateway. The analysis was performed using the following command:
+
+```bash
+curl -s -X GET http://localhost:3000/api/apis -H 'Authorization: Bearer 6fc8251e34b5436547f8d4f79bca6b1e'
+```
+
+This command retrieves information about the APIs loaded into the gateway, which was used to understand how the TPP communicates with the Tyk Bank via the gateway.
