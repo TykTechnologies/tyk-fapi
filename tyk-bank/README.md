@@ -9,10 +9,10 @@ This project provides a mock implementation of Open Banking APIs from multiple c
 **Currently Implemented:**
 - UK Open Banking Account Information API
 - UK Open Banking Payment Initiation API (Domestic Payments only) with FAPI 2.0 Security Profile
+- UK Open Banking Event Subscriptions API
+- UK Open Banking Event Notifications API
 
 **Planned for Future:**
-- UK Open Banking Payment Initiation API (Additional payment types)
-- Brazil Open Banking APIs
 - Additional country implementations
 
 The mock bank provides endpoints for:
@@ -24,6 +24,8 @@ The mock bank provides endpoints for:
 - Domestic Payments
 - Pushed Authorization Requests (PAR)
 - Payment Authorization
+- Event Subscriptions
+- Event Notifications
 
 ## Project Structure
 
@@ -35,7 +37,8 @@ tyk-bank/
 │   ├── common/                      # Shared utilities and types
 │   ├── uk/                          # UK Open Banking
 │   │   ├── account-information/     # Account Information API
-│   │   └── payment-initiation/      # Payment Initiation API
+│   │   ├── payment-initiation/      # Payment Initiation API
+│   │   └── event-subscriptions/     # Event Subscriptions API
 │   └── brazil/                      # Brazil Open Banking (future)
 └── tests/                           # Test files
 ```
@@ -80,12 +83,17 @@ Start the Payment Initiation API server:
 npm run start:payment
 ```
 
-Start both servers concurrently:
+Start the Event Subscriptions API server:
+```
+npm run start:events
+```
+
+Start all servers concurrently:
 ```
 npm run dev:all
 ```
 
-The Account Information API will start on port 3001 and the Payment Initiation API on port 3002 by default. You can change this by setting the `PORT` environment variable.
+The Account Information API will start on port 3001, the Payment Initiation API on port 3002, and the Event Subscriptions API on port 3003 by default. You can change this by setting the `PORT` environment variable.
 
 For development with auto-reload:
 ```
@@ -95,7 +103,10 @@ npm run dev:account
 # Payment Initiation API
 npm run dev:payment
 
-# Both APIs concurrently
+# Event Subscriptions API
+npm run dev:events
+
+# All APIs concurrently
 npm run dev:all
 ```
 
@@ -142,6 +153,11 @@ The project is structured as a collection of microservices, each representing a 
 - Manages domestic payment consents
 - Provides funds confirmation
 
+#### Event Subscriptions API (Port 3003)
+- Manages event subscriptions for TPPs
+- Delivers event notifications to registered callbacks
+- Supports various event types related to payments and consents
+
 ### Brazil Open Banking (future)
 
 #### Account Information API (Port 3003, future)
@@ -178,6 +194,41 @@ The project is structured as a collection of microservices, each representing a 
 
 - `POST /as/par` - Create a pushed authorization request (PAR)
 - `GET /as/authorize` - Authorization endpoint for handling authorization requests
+
+### UK Open Banking - Event Subscriptions
+
+- `POST /event-subscriptions` - Register a callback URL for event notifications
+- `GET /event-subscriptions` - List all event subscriptions
+- `GET /event-subscriptions/{EventSubscriptionId}` - Get subscription details
+- `PUT /event-subscriptions/{EventSubscriptionId}` - Update a subscription
+- `DELETE /event-subscriptions/{EventSubscriptionId}` - Delete a subscription
+
+## Event Notifications
+
+The mock bank supports event notifications for various payment and consent-related events. TPPs can register callback URLs to receive notifications when these events occur.
+
+For detailed information about the event notification system, see [Event Notifications Documentation](EVENT_NOTIFICATIONS.md).
+
+### Event Types
+
+- `payment-consent-created` - When a new payment consent is created
+- `payment-consent-authorised` - When a payment consent is authorized
+- `payment-consent-rejected` - When a payment consent is rejected
+- `payment-created` - When a new payment is created
+- `payment-completed` - When a payment is successfully completed
+- `payment-failed` - When a payment fails
+- `funds-confirmation-completed` - When a funds confirmation check is performed
+
+### Enabling Event Notifications
+
+Event notifications are disabled by default. To enable them, set the `ENABLE_EVENTS` environment variable to `true` in the Docker Compose file or when running the services directly:
+
+```bash
+# Enable events when running directly
+ENABLE_EVENTS=true npm run dev:events
+```
+
+When events are enabled, the mock bank will use Kafka to publish events and deliver notifications to registered TPPs.
 
 ## Testing with Postman
 

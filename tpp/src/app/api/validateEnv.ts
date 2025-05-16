@@ -4,11 +4,12 @@
  */
 
 // Function to validate environment variables
-export function validateEnvironmentVariables() {
+export function validateEnvironmentVariables(additionalVars: string[] = []) {
   const requiredVars = [
     'ACCOUNT_INFORMATION_API_URL',
     'PAYMENT_INITIATION_API_URL',
-    'AUTHORIZATION_SERVER_URL'
+    'AUTHORIZATION_SERVER_URL',
+    ...additionalVars
   ];
   
   const missingVars: string[] = [];
@@ -36,6 +37,11 @@ export function validateEnvironmentVariables() {
   console.log(`- ACCOUNT_INFORMATION_API_URL: ${process.env.ACCOUNT_INFORMATION_API_URL || '(not set)'}`);
   console.log(`- PAYMENT_INITIATION_API_URL: ${process.env.PAYMENT_INITIATION_API_URL || '(not set)'}`);
   console.log(`- AUTHORIZATION_SERVER_URL: ${process.env.AUTHORIZATION_SERVER_URL || '(not set)'}`);
+  
+  // Log additional variables if provided
+  additionalVars.forEach(varName => {
+    console.log(`- ${varName}: ${process.env[varName] || '(not set)'}`);
+  });
   
   return missingVars.length === 0;
 }

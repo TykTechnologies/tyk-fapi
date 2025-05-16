@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # UK Open Banking - Account Information API
   uk-account-information:
@@ -35,6 +33,14 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - SERVICE=uk-payment-initiation
+      - ENABLE_EVENTS=true
+      - KAFKA_BROKER=kafka:9092
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=tyk_bank
+      - DB_PASSWORD=tyk_bank_password
+      - DB_NAME=tyk_bank
+      - EVENT_SERVICE_URL=http://uk-event-subscriptions:3003
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
@@ -42,36 +48,125 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    depends_on:
+      - kafka
+      - postgres
 
-  # Brazil Open Banking - Account Information API (uncomment when implemented)
-  # brazil-account-information:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     args:
-  #       - SERVICE=brazil-account-information
-  #   ports:
-  #     - "3003:3001"
-  #   environment:
-  #     - NODE_ENV=production
-  #     - PORT=3001
-  #     - SERVICE=brazil-account-information
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
+  # UK Open Banking - Event Subscriptions API
+  uk-event-subscriptions:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE=uk-event-subscriptions
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - SERVICE=uk-event-subscriptions-pg
+      - ENABLE_EVENTS=true
+      - KAFKA_BROKER=kafka:9092
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=tyk_bank
+      - DB_PASSWORD=tyk_bank_password
+      - DB_NAME=tyk_bank
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - kafka
+      - postgres
 
-  # Uncomment the following section if you want to add a UI for API documentation
-  # Note: You would need to implement an OpenAPI specification endpoint first
-  # swagger-ui:
-  #   image: swaggerapi/swagger-ui
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - API_URL=http://localhost:3001/  # Currently no OpenAPI spec endpoint exists
-  #   depends_on:
-  #     - uk-account-information
-  #     - uk-payment-initiation
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: tyk_bank
+      POSTGRES_PASSWORD: tyk_bank_password
+      POSTGRES_DB: tyk_bank
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tyk_bank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL UI for database management
+  adminer:
+    image: adminer:latest
+    ports:
+      - "3432:8080"  # Using 3432 to match pattern with PostgreSQL's 5432 port
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+      - ADMINER_DESIGN=flat
+    depends_on:
+      - postgres
+
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  # Kafka UI for monitoring Kafka topics and messages
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "3092:8080"  # Changed to 3092 to match pattern with Kafka's 9092 port
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=tyk-bank
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+
+volumes:
+  postgres_data:
+  kafka_data:

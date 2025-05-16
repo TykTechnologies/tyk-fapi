@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getPushedAuthRequest, deletePushedAuthRequest } from '../data/par';
 import { getPaymentConsentById, updatePaymentConsentStatus } from '../data/consents';
 import { ConsentStatus } from '../models/consent';
+import { publishPaymentConsentEvent, mapConsentStatusToEventType } from '../services/event-publisher';
 
 /**
  * Handle authorization request
@@ -72,7 +73,21 @@ export const handleAuthorizationRequest = (req: Request, res: Response) => {
       console.log(`Authorizing consent: ${consentId}`);
       
       // Update the consent status to Authorised
-      updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
+      const updatedConsent = updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
+      
+      // Publish event for consent authorization
+      if (updatedConsent) {
+        const eventType = mapConsentStatusToEventType(ConsentStatus.AUTHORISED);
+        if (eventType) {
+          publishPaymentConsentEvent(eventType, consentId, {
+            consentId,
+            status: ConsentStatus.AUTHORISED,
+            timestamp: updatedConsent.StatusUpdateDateTime
+          }).catch(error => {
+            console.error('Failed to publish consent authorized event:', error);
+          });
+        }
+      }
     } else {
       console.log('No consent ID provided, skipping consent authorization');
     }
@@ -132,6 +147,20 @@ export const authorizePaymentConsent = (req: Request, res: Response) => {
     
     // Update the consent status to Authorised
     const updatedConsent = updatePaymentConsentStatus(consentId, ConsentStatus.AUTHORISED);
+    
+    // Publish event for consent authorization
+    if (updatedConsent) {
+      const eventType = mapConsentStatusToEventType(ConsentStatus.AUTHORISED);
+      if (eventType) {
+        publishPaymentConsentEvent(eventType, consentId, {
+          consentId,
+          status: ConsentStatus.AUTHORISED,
+          timestamp: updatedConsent.StatusUpdateDateTime
+        }).catch(error => {
+          console.error('Failed to publish consent authorized event:', error);
+        });
+      }
+    }
     
     if (!updatedConsent) {
       console.error(`Failed to update consent status: ${consentId}`);
