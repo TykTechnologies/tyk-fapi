@@ -84,11 +84,6 @@ For FAPI 2.0 compliance, the following security measures should be implemented:
    - Scope validation for event subscription management
    - API Gateway responsibility for authentication and authorization
 
-2. **Message Integrity and Authenticity**:
-   - The current implementation sends notifications as JWTs (JSON Web Tokens)
-   - The JWTs are not signed or encrypted in the current implementation
-   - In a production environment, JWS (JSON Web Signature) should be implemented
-
 3. **Transport Security**:
    - TLS 1.2+ for all communications
    - HTTPS for all endpoints

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Event, EventType } from '../models/subscription';
 import { publishEvent } from '../services/kafka-producer';
+import { findActiveSubscriptionsForEventType } from '../data/subscriptions';
 
 /**
  * Publish an event to Kafka
@@ -11,9 +12,6 @@ export const publishEventController = async (req: Request, res: Response) => {
   try {
     const { eventType, resourceId, resourceType, data } = req.body;
     
-    console.log('DEBUG: Event publication request received:', { eventType, resourceId, resourceType });
-    console.log('DEBUG: ENABLE_EVENTS setting:', process.env.ENABLE_EVENTS);
-    
     if (!eventType || !resourceId || !resourceType) {
       return res.status(400).json({
         ErrorCode: 'InvalidRequest',
@@ -23,7 +21,6 @@ export const publishEventController = async (req: Request, res: Response) => {
     
     // Validate event type
     if (!Object.values(EventType).includes(eventType)) {
-      console.log('DEBUG: Invalid event type:', eventType, 'Valid types:', Object.values(EventType));
       return res.status(400).json({
         ErrorCode: 'InvalidRequest',
         ErrorMessage: `Invalid event type: ${eventType}`
@@ -40,8 +37,6 @@ export const publishEventController = async (req: Request, res: Response) => {
       data: data || {}
     };
     
-    console.log('DEBUG: Attempting to publish event to Kafka:', event.id);
-    
     // Publish event to Kafka
     await publishEvent(event);
     
@@ -51,6 +46,42 @@ export const publishEventController = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error publishing event:', error);
+    res.status(500).json({
+      ErrorCode: 'InternalServerError',
+      ErrorMessage: 'An internal server error occurred'
+    });
+  }
+};
+
+/**
+ * Get active subscriptions for an event type
+ * @param req Express request
+ * @param res Express response
+ */
+export const getActiveSubscriptionsForEventTypeController = async (req: Request, res: Response) => {
+  try {
+    const { eventType } = req.params;
+    
+    // Validate event type
+    if (!Object.values(EventType).includes(eventType as EventType)) {
+      return res.status(400).json({
+        ErrorCode: 'InvalidRequest',
+        ErrorMessage: `Invalid event type: ${eventType}`
+      });
+    }
+    
+    // Get active subscriptions
+    const subscriptions = await findActiveSubscriptionsForEventType(eventType as EventType);
+    
+    res.status(200).json({
+      count: subscriptions.length,
+      subscriptions: subscriptions.map(subscription => ({
+        EventSubscriptionId: subscription.EventSubscriptionId,
+        CallbackUrl: subscription.CallbackUrl
+      }))
+    });
+  } catch (error) {
+    console.error(`Error getting active subscriptions for event type ${req.params.eventType}:`, error);
     res.status(500).json({
       ErrorCode: 'InternalServerError',
       ErrorMessage: 'An internal server error occurred'

@@ -27,7 +27,8 @@ const paymentsApi = {
     try {
       const response = await axios.post<DomesticPaymentConsentResponse>(
         `${API_URL}/domestic-payment-consents`,
-        consentRequest
+        consentRequest,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -44,7 +45,8 @@ const paymentsApi = {
   getPaymentConsent: async (consentId: string): Promise<DomesticPaymentConsentResponse> => {
     try {
       const response = await axios.get<DomesticPaymentConsentResponse>(
-        `${API_URL}/domestic-payment-consents/${consentId}`
+        `${API_URL}/domestic-payment-consents/${consentId}`,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -61,7 +63,8 @@ const paymentsApi = {
   checkFundsAvailability: async (consentId: string): Promise<FundsConfirmationResponse> => {
     try {
       const response = await axios.get<FundsConfirmationResponse>(
-        `${API_URL}/domestic-payment-consents/${consentId}/funds-confirmation`
+        `${API_URL}/domestic-payment-consents/${consentId}/funds-confirmation`,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -81,7 +84,8 @@ const paymentsApi = {
     try {
       const response = await axios.post<DomesticPaymentResponse>(
         `${API_URL}/domestic-payments`,
-        paymentRequest
+        paymentRequest,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error: any) {
@@ -123,7 +127,8 @@ const paymentsApi = {
   getPayment: async (paymentId: string): Promise<DomesticPaymentResponse> => {
     try {
       const response = await axios.get<DomesticPaymentResponse>(
-        `${API_URL}/domestic-payments/${paymentId}`
+        `${API_URL}/domestic-payments/${paymentId}`,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -140,7 +145,8 @@ const paymentsApi = {
   getPaymentDetails: async (paymentId: string): Promise<any> => {
     try {
       const response = await axios.get(
-        `${API_URL}/domestic-payments/${paymentId}/payment-details`
+        `${API_URL}/domestic-payments/${paymentId}/payment-details`,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -168,7 +174,8 @@ const paymentsApi = {
     try {
       const response = await axios.post<PushedAuthorizationResponse>(
         `${API_URL}/as/par`,
-        params
+        params,
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -185,7 +192,9 @@ const paymentsApi = {
   authorizePaymentConsent: async (consentId: string): Promise<DomesticPaymentConsentResponse> => {
     try {
       const response = await axios.put<DomesticPaymentConsentResponse>(
-        `${API_URL}/domestic-payment-consents/${consentId}/authorize`
+        `${API_URL}/domestic-payment-consents/${consentId}/authorize`,
+        {},
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {

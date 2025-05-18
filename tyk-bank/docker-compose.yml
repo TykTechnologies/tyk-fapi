@@ -71,7 +71,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3003
-      - SERVICE=uk-event-subscriptions-pg
+      - SERVICE=uk-event-subscriptions
       - ENABLE_EVENTS=${ENABLE_EVENTS}
       - KAFKA_BROKER=${KAFKA_BROKER}
       - DB_HOST=${DB_HOST}

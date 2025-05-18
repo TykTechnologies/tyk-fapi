@@ -2,7 +2,8 @@ import { Router } from 'express';
 import {
   createDomesticPaymentConsent,
   getDomesticPaymentConsent,
-  getDomesticPaymentConsentFundsConfirmation
+  getDomesticPaymentConsentFundsConfirmation,
+  updateConsentStatus
 } from '../controllers/consents';
 import { authorizePaymentConsent } from '../controllers/authorization';
 
@@ -84,5 +85,37 @@ router.get('/:consentId/funds-confirmation', getDomesticPaymentConsentFundsConfi
  *         description: Consent not found
  */
 router.put('/:consentId/authorize', authorizePaymentConsent);
+
+/**
+ * @swagger
+ * /domestic-payment-consents/{consentId}/status:
+ *   put:
+ *     summary: Update payment consent status
+ *     description: Updates the status of a payment consent
+ *     parameters:
+ *       - in: path
+ *         name: consentId
+ *         required: true
+ *         description: ID of the consent to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [AwaitingAuthorisation, Authorised, Consumed, Rejected]
+ *                 description: The new status for the consent
+ *     responses:
+ *       200:
+ *         description: Consent status updated successfully
+ *       400:
+ *         description: Invalid status
+ *       404:
+ *         description: Consent not found
+ */
+router.put('/:consentId/status', updateConsentStatus);
 
 export default router;

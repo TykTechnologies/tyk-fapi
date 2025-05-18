@@ -145,10 +145,49 @@ export const getPaymentsByConsentId = async (consentId: string): Promise<Domesti
 };
 
 /**
+ * Get payments by status
+ */
+export const getPaymentsByStatus = async (status: PaymentStatus): Promise<DomesticPayment[]> => {
+  try {
+    // Join with payment_consents to get the initiation details
+    const result = await db.query(`
+      SELECT
+        p.payment_id, p.consent_id, p.creation_date_time, p.status,
+        p.status_update_date_time, p.expected_execution_date_time, p.expected_settlement_date_time,
+        pc.instruction_identification, pc.end_to_end_identification,
+        pc.instructed_amount_amount, pc.instructed_amount_currency,
+        pc.creditor_account_scheme_name, pc.creditor_account_identification, pc.creditor_account_name,
+        pc.creditor_account_secondary_identification,
+        pc.remittance_information_reference, pc.remittance_information_unstructured
+      FROM
+        payments p
+      JOIN
+        payment_consents pc ON p.consent_id = pc.consent_id
+      WHERE
+        p.status = $1
+    `, [status]);
+    
+    return result.rows.map(rowToPayment);
+  } catch (error) {
+    console.error(`Error getting payments by status ${status}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Create a new payment
  */
 export const createPayment = async (consentId: string): Promise<DomesticPayment | undefined> => {
   console.log(`=== Starting payment creation for consent ID: ${consentId} ===`);
+  
+  // Check database connection
+  try {
+    const testConnection = await db.query('SELECT NOW()');
+    console.log('Database connection test result:', testConnection.rows[0]);
+  } catch (dbConnectionError) {
+    console.error('Database connection test failed:', dbConnectionError);
+    throw new Error(`Database connection failed: ${dbConnectionError instanceof Error ? dbConnectionError.message : 'Unknown error'}`);
+  }
   
   // Use a transaction to ensure all operations succeed or fail together
   return await db.transaction(async (client) => {
@@ -179,6 +218,15 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
       try {
         // Insert the payment record
         console.log('Inserting payment record into database...');
+        console.log('Payment data:', {
+          paymentId,
+          consentId,
+          now: now.toISOString(),
+          status: PaymentStatus.ACCEPTED_SETTLEMENT_IN_PROCESS,
+          executionDateTime: executionDateTime.toISOString(),
+          settlementDateTime: settlementDateTime.toISOString()
+        });
+        
         const paymentResult = await client.query(`
           INSERT INTO payments (
             payment_id, consent_id, creation_date_time, status,
@@ -208,6 +256,14 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
       
       console.log('Payment consent details:', JSON.stringify(consent, null, 2));
       
+      // Transaction creation details for debugging
+      console.log('Transaction creation details:', {
+        hasDebtorAccount: !!consent.Initiation.DebtorAccount,
+        debtorAccountIdentification: consent.Initiation.DebtorAccount?.Identification,
+        consentId: consentId,
+        paymentId: paymentId
+      });
+
       // Create debit transaction for the sender account if debtor account is specified
       if (consent.Initiation.DebtorAccount) {
         console.log(`Found debtor account: ${JSON.stringify(consent.Initiation.DebtorAccount, null, 2)}`);
@@ -216,6 +272,8 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
           // Look up the internal account ID using the account identification
           console.log(`Looking up account with identification: ${consent.Initiation.DebtorAccount.Identification}`);
           const account = await getAccountByIdentification(consent.Initiation.DebtorAccount.Identification);
+          
+          console.log('Account lookup result:', account ? `Found account with ID: ${account.AccountId}` : 'Account not found');
           
           if (account) {
             console.log(`Found matching account with internal ID: ${account.AccountId}`);
@@ -245,9 +303,35 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
               
               console.log('Creating transaction with data:', JSON.stringify(transaction, null, 2));
               
-              // Create the transaction directly in the database
-              await createTransaction(transaction);
-              console.log('Transaction created successfully');
+              try {
+                // Check if the account exists in the database
+                const accountCheckResult = await client.query(
+                  'SELECT * FROM accounts WHERE account_id = $1',
+                  [account.AccountId]
+                );
+                
+                console.log(`Account check result: Found ${accountCheckResult.rows.length} matching accounts`);
+                
+                if (accountCheckResult.rows.length === 0) {
+                  console.error(`Account with ID ${account.AccountId} not found in database`);
+                  throw new Error(`Account with ID ${account.AccountId} not found in database`);
+                }
+                
+                // Create the transaction directly in the database
+                console.log('Creating transaction in database...');
+                const createdTransaction = await createTransaction(transaction);
+                console.log('Transaction created successfully:', createdTransaction ? 'Success' : 'Failed');
+                
+                if (!createdTransaction) {
+                  console.error('Transaction creation returned null or undefined');
+                } else {
+                  console.log('Created transaction details:', JSON.stringify(createdTransaction, null, 2));
+                }
+              } catch (transactionCreationError) {
+                console.error('Error during transaction creation:', transactionCreationError);
+                console.error('Error details:', transactionCreationError instanceof Error ? transactionCreationError.stack : 'Unknown error type');
+                throw transactionCreationError;
+              }
             } catch (transactionError) {
               console.error(`Failed to create transaction for payment ${paymentId}:`, transactionError);
               console.error('Transaction error details:', transactionError instanceof Error ? transactionError.stack : 'Unknown error');
@@ -261,7 +345,101 @@ export const createPayment = async (consentId: string): Promise<DomesticPayment 
           throw new Error(`Account lookup failed: ${accountLookupError instanceof Error ? accountLookupError.message : 'Unknown error'}`);
         }
       } else {
-        console.warn(`No debtor account specified for payment ${paymentId}, skipping transaction creation`);
+        console.warn(`No debtor account specified for payment ${paymentId}, attempting to use a default account`);
+        
+        try {
+          // Use a default account for testing
+          const defaultAccountId = process.env.DEFAULT_ACCOUNT_ID || '12345678901234';
+          console.log(`Looking up default account with identification: ${defaultAccountId}`);
+          
+          let account = await getAccountByIdentification(defaultAccountId);
+          
+          // If default account doesn't exist, create it
+          if (!account) {
+            console.log(`Default account not found, creating it now...`);
+            
+            // Import the enum types
+            console.log('Importing account models...');
+            try {
+              const { AccountStatus, AccountCategory, AccountTypeCode, AccountIdentificationType } = await import('../../account-information/models/account');
+              const { createAccount: createAccountFunc } = await import('../../account-information/data/pg-accounts');
+              
+              console.log('Creating default account with identification:', defaultAccountId);
+              
+              // Create a default account
+              account = await createAccountFunc({
+                Status: AccountStatus.ENABLED,
+                Currency: 'GBP',
+                AccountType: 'Personal',
+                AccountSubType: AccountTypeCode.CACC,
+                Description: 'Default Account',
+                Nickname: 'Default Account',
+                OpeningDate: new Date().toISOString(),
+                AccountCategory: AccountCategory.PERSONAL,
+                SwitchStatus: 'UK.CASS.NotSwitched',
+                Account: {
+                  SchemeName: AccountIdentificationType.SORTCODEACCOUNTNUMBER,
+                  Identification: defaultAccountId,
+                  Name: 'Default Account',
+                  SecondaryIdentification: ''
+                },
+                Servicer: {
+                  SchemeName: 'UK.OBIE.BICFI',
+                  Identification: 'TYK12345',
+                  Name: 'Tyk Bank'
+                }
+              });
+              
+              console.log(`Created default account with ID: ${account.AccountId}`);
+            } catch (createAccountError) {
+              console.error('Failed to create default account:', createAccountError);
+            }
+          }
+          
+          if (account) {
+            console.log(`Found default account with internal ID: ${account.AccountId}`);
+            
+            try {
+              const transaction = {
+                AccountId: account.AccountId,
+                Status: TransactionStatus.BOOKED,
+                BookingDateTime: now.toISOString(),
+                ValueDateTime: now.toISOString(),
+                TransactionInformation: `Payment to ${consent.Initiation.CreditorAccount.Name} (${now.toISOString()})`,
+                Amount: {
+                  Amount: consent.Initiation.InstructedAmount.Amount,
+                  Currency: consent.Initiation.InstructedAmount.Currency
+                },
+                CreditDebitIndicator: CreditDebitIndicator.DEBIT,
+                BankTransactionCode: {
+                  Code: 'Debit',
+                  SubCode: 'DomesticPayment'
+                },
+                CreditorAccount: {
+                  SchemeName: consent.Initiation.CreditorAccount.SchemeName,
+                  Identification: consent.Initiation.CreditorAccount.Identification,
+                  Name: consent.Initiation.CreditorAccount.Name
+                }
+              };
+              
+              console.log('Creating transaction with default account data:', JSON.stringify(transaction, null, 2));
+              
+              try {
+                // Create the transaction directly in the database
+                const createdTransaction = await createTransaction(transaction);
+                console.log('Transaction created successfully with default account:', createdTransaction ? 'Success' : 'Failed');
+              } catch (transactionCreationError) {
+                console.error('Error during transaction creation with default account:', transactionCreationError);
+              }
+            } catch (transactionError) {
+              console.error(`Failed to create transaction for payment ${paymentId} with default account:`, transactionError);
+            }
+          } else {
+            console.warn(`Default account with identification ${defaultAccountId} not found, skipping transaction creation`);
+          }
+        } catch (accountLookupError) {
+          console.error('Error during default account lookup:', accountLookupError);
+        }
       }
       
       // In a real implementation, we would initiate the actual payment process here

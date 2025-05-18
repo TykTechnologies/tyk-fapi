@@ -1,152 +1,91 @@
-/**
- * Authorization Route Handler
- *
- * This route handler is responsible for redirecting the user to the authorization server
- * for the OAuth 2.0 authorization flow. It implements a fallback mechanism that tries
- * to use a direct connection to the authorization server first, and if that fails,
- * it falls back to using the API Gateway.
- *
- * The flow works as follows:
- * 1. Extract the request_uri parameter from the query string
- * 2. Construct a URL to the authorization server with all query parameters
- * 3. Try to check if the authorization server is accessible with a HEAD request
- * 4. If the authorization server is accessible, redirect the user to it
- * 5. If the authorization server is not accessible, try the API Gateway instead
- * 6. If both fail, return a detailed error response
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { AUTHORIZATION_SERVER_URL, API_GATEWAY_URLS } from '../../config';
-import { getApiGatewayHeaders } from '../../utils';
+import { v4 as uuidv4 } from 'uuid';
+import * as jose from 'jose';
+import { getKeyPair } from '@/lib/server/auth/oidcClient';
+import { getSession, storePkceInSession } from '@/lib/server/auth/session';
+import { AUTHORIZATION_SERVER_URL } from '@/app/api/config';
 
+/**
+ * Authorization endpoint
+ * This endpoint initiates the authorization flow with the authorization server
+ * It generates PKCE code verifier and challenge, and redirects to the authorization server
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Get the request_uri parameter from the query string
-    const requestUri = request.nextUrl.searchParams.get('request_uri');
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const redirectUri = searchParams.get('redirect_uri') || 'http://localhost:3010/callback';
+    const scope = searchParams.get('scope') || 'openid profile';
+    const responseType = searchParams.get('response_type') || 'code';
+    const clientId = searchParams.get('client_id') || 'tpp';
     
-    if (!requestUri) {
-      console.error('Server-side API route: Missing request_uri parameter');
-      return NextResponse.json(
-        { error: 'Missing request_uri parameter' },
-        { status: 400 }
-      );
-    }
+    // Generate state
+    const state = uuidv4();
     
-    // Check if there are any other query parameters that need to be forwarded
-    const queryParams = new URLSearchParams();
+    // Generate PKCE code verifier and challenge
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
     
-    // Add the request_uri parameter
-    queryParams.append('request_uri', requestUri);
+    // Create a new session
+    const { sessionId } = await getSession();
     
-    // Get all other query parameters from the original request and add them
-    // But skip the request_uri parameter since we've already added it
-    for (const [key, value] of request.nextUrl.searchParams.entries()) {
-      if (key !== 'request_uri') {
-        queryParams.append(key, value);
-      }
-    }
+    // Store PKCE code verifier and state in session
+    await storePkceInSession(sessionId, codeVerifier, state);
     
-    // For authorization, we need to redirect the user to the actual authorization URL
-    // We can't proxy this through our API route
-    const redirectUrl = `${AUTHORIZATION_SERVER_URL}/as/authorize?${queryParams.toString()}`;
+    // Build authorization URL
+    const authorizationUrl = new URL(`${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/auth`);
+    authorizationUrl.searchParams.append('client_id', clientId);
+    authorizationUrl.searchParams.append('response_type', responseType);
+    authorizationUrl.searchParams.append('scope', scope);
+    authorizationUrl.searchParams.append('redirect_uri', redirectUri);
+    authorizationUrl.searchParams.append('state', state);
+    authorizationUrl.searchParams.append('code_challenge', codeChallenge);
+    authorizationUrl.searchParams.append('code_challenge_method', 'S256');
     
-    console.log(`Using authorization server URL: ${AUTHORIZATION_SERVER_URL}`);
-    console.log(`Server-side API route: Redirecting to: ${redirectUrl}`);
-    console.log(`Query parameters: ${queryParams.toString()}`);
+    // Set session cookie and redirect to authorization server
+    const response = NextResponse.redirect(authorizationUrl);
+    response.cookies.set('session_id', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60, // 1 hour
+    });
     
-    // Try to fetch the authorization URL first to check if it's accessible
-    let useDirectConnection = true;
-    let fallbackReason = '';
-    
-    try {
-      // Use the same URL for the HEAD request as we'll use for the redirect
-      console.log(`Checking if authorization server is accessible: ${redirectUrl}`);
-      const checkResponse = await fetch(redirectUrl, {
-        method: 'HEAD',
-        headers: getApiGatewayHeaders(request)
-      });
-      
-      console.log(`Authorization URL check status: ${checkResponse.status}`);
-      
-      if (!checkResponse.ok) {
-        console.error(`Error checking authorization URL: ${checkResponse.status} ${checkResponse.statusText}`);
-        useDirectConnection = false;
-        fallbackReason = `Authorization server returned ${checkResponse.status} ${checkResponse.statusText}`;
-      }
-    } catch (error) {
-      console.error(`Error checking authorization URL:`, error);
-      useDirectConnection = false;
-      fallbackReason = error instanceof Error ? error.message : 'Unknown error';
-      
-      // If the error is a connection error, show a more user-friendly error
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        return NextResponse.json(
-          {
-            error: 'authorization_server_unavailable',
-            error_description: 'The authorization server is not available. Please ensure it is running.',
-            details: error.message
-          },
-          { status: 503 }
-        );
-      }
-    }
-    
-    // If direct connection failed, try using the API Gateway instead
-    if (!useDirectConnection) {
-      console.log(`Direct connection to authorization server failed: ${fallbackReason}`);
-      console.log('Falling back to API Gateway for authorization');
-      
-      // Construct the API Gateway URL with the same query parameters
-      const apiGatewayUrl = `${API_GATEWAY_URLS.PAYMENT_INITIATION}/as/authorize?${queryParams.toString()}`;
-      console.log(`Redirecting to API Gateway: ${apiGatewayUrl}`);
-      console.log(`Query parameters: ${queryParams.toString()}`);
-      
-      // Try to check if the API Gateway URL is accessible
-      try {
-        const checkResponse = await fetch(apiGatewayUrl, {
-          method: 'HEAD',
-          headers: getApiGatewayHeaders(request)
-        });
-        
-        console.log(`API Gateway URL check status: ${checkResponse.status}`);
-        
-        if (!checkResponse.ok) {
-          console.error(`Error checking API Gateway URL: ${checkResponse.status} ${checkResponse.statusText}`);
-          return NextResponse.json(
-            {
-              error: 'Both direct connection and API Gateway failed',
-              message: 'Unable to access authorization endpoint through either direct connection or API Gateway.',
-              directError: fallbackReason,
-              gatewayError: `${checkResponse.status} ${checkResponse.statusText}`
-            },
-            { status: 503 }
-          );
-        }
-      } catch (error) {
-        console.error(`Error checking API Gateway URL:`, error);
-        return NextResponse.json(
-          {
-            error: 'Both direct connection and API Gateway failed',
-            message: 'Unable to access authorization endpoint through either direct connection or API Gateway.',
-            directError: fallbackReason,
-            gatewayError: error instanceof Error ? error.message : 'Unknown error'
-          },
-          { status: 503 }
-        );
-      }
-      
-      // If we got here, the API Gateway URL is accessible
-      return NextResponse.redirect(apiGatewayUrl);
-    }
-    
-    // If direct connection was successful, proceed with the direct URL
-    console.log(`Proceeding with direct connection to: ${redirectUrl}`);
-    return NextResponse.redirect(redirectUrl);
+    return response;
   } catch (error) {
-    console.error('Server-side API route: Error handling authorization redirect:', error);
+    console.error('Authorization error:', error);
     return NextResponse.json(
-      { error: 'Failed to process authorization request' },
+      { error: 'Failed to initiate authorization' },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Generate a random code verifier for PKCE
+ */
+function generateCodeVerifier(): string {
+  return base64URLEncode(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+/**
+ * Generate a code challenge from a code verifier using S256 method
+ */
+async function generateCodeChallenge(codeVerifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(codeVerifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  
+  return base64URLEncode(new Uint8Array(digest));
+}
+
+/**
+ * Base64URL encode a Uint8Array
+ */
+function base64URLEncode(buffer: Uint8Array): string {
+  return btoa(String.fromCharCode(...buffer))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }

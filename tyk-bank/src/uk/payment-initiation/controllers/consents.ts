@@ -51,44 +51,43 @@ export const createDomesticPaymentConsent = async (req: Request, res: Response) 
       });
     }
     
-    if (!Initiation.InstructedAmount || !Initiation.InstructedAmount.Amount || !Initiation.InstructedAmount.Currency) {
+    if (!Initiation.InstructedAmount?.Amount || !Initiation.InstructedAmount?.Currency) {
       return res.status(400).json({
         ErrorCode: 'InvalidRequest',
         ErrorMessage: 'InstructedAmount with Amount and Currency is required'
       });
     }
     
-    if (!Initiation.CreditorAccount || !Initiation.CreditorAccount.SchemeName || 
-        !Initiation.CreditorAccount.Identification || !Initiation.CreditorAccount.Name) {
+    if (!Initiation.CreditorAccount?.Identification || !Initiation.CreditorAccount?.Name) {
       return res.status(400).json({
         ErrorCode: 'InvalidRequest',
-        ErrorMessage: 'CreditorAccount with SchemeName, Identification, and Name is required'
+        ErrorMessage: 'CreditorAccount with Identification and Name is required'
       });
     }
     
     // Create new consent
-    const newConsent = await createPaymentConsent(
-      Initiation,
-      consentRequest.Risk || {}
-    );
+    const newConsent = await createPaymentConsent(consentRequest.Data.Initiation, consentRequest.Risk || {});
     
-    // The consent will remain in AwaitingAuthorisation status
-    // until explicitly authorized via the authorization endpoint
+    if (!newConsent) {
+      return res.status(400).json({
+        ErrorCode: 'ConsentCreationFailed',
+        ErrorMessage: 'Failed to create payment consent'
+      });
+    }
     
     // Publish event for consent creation
     const eventType = mapConsentStatusToEventType(ConsentStatus.AWAITING_AUTHORISATION);
     if (eventType) {
       publishPaymentConsentEvent(eventType, newConsent.ConsentId, {
         consentId: newConsent.ConsentId,
-        status: newConsent.Status,
-        timestamp: newConsent.CreationDateTime,
-        amount: newConsent.Initiation.InstructedAmount.Amount,
-        currency: newConsent.Initiation.InstructedAmount.Currency
+        status: ConsentStatus.AWAITING_AUTHORISATION,
+        timestamp: newConsent.CreationDateTime
       }).catch(error => {
         console.error('Failed to publish consent created event:', error);
       });
     }
     
+    // Build response
     const response = {
       Data: {
         ConsentId: newConsent.ConsentId,
@@ -100,8 +99,7 @@ export const createDomesticPaymentConsent = async (req: Request, res: Response) 
       },
       Risk: newConsent.Risk,
       Links: {
-        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}/${newConsent.ConsentId}`,
-        Authorize: `${req.protocol}://${req.get('host')}/domestic-payment-consents/${newConsent.ConsentId}/authorize`
+        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}/${newConsent.ConsentId}`
       } as Links,
       Meta: {
         TotalPages: 1
@@ -126,6 +124,7 @@ export const createDomesticPaymentConsent = async (req: Request, res: Response) 
 export const getDomesticPaymentConsent = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
+    
     const consent = await getPaymentConsentById(consentId);
     
     if (!consent) {
@@ -147,15 +146,15 @@ export const getDomesticPaymentConsent = async (req: Request, res: Response) => 
       Risk: consent.Risk,
       Links: {
         Self: `${req.protocol}://${req.get('host')}${req.originalUrl}`
-      } as Links,
+      },
       Meta: {
         TotalPages: 1
-      } as Meta
+      }
     };
     
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error getting domestic payment consent by ID:', error);
+    console.error('Error getting domestic payment consent:', error);
     res.status(500).json({
       ErrorCode: 'InternalServerError',
       ErrorMessage: 'An internal server error occurred'
@@ -171,6 +170,7 @@ export const getDomesticPaymentConsent = async (req: Request, res: Response) => 
 export const getDomesticPaymentConsentFundsConfirmation = async (req: Request, res: Response) => {
   try {
     const { consentId } = req.params;
+    
     const consent = await getPaymentConsentById(consentId);
     
     if (!consent) {
@@ -180,36 +180,132 @@ export const getDomesticPaymentConsentFundsConfirmation = async (req: Request, r
       });
     }
     
+    // Check if consent is authorized
+    if (consent.Status !== ConsentStatus.AUTHORISED) {
+      return res.status(400).json({
+        ErrorCode: 'InvalidConsentStatus',
+        ErrorMessage: `Consent with ID ${consentId} has status ${consent.Status}, expected ${ConsentStatus.AUTHORISED}`
+      });
+    }
+    
     // Check funds availability
     const fundsAvailable = await checkFundsAvailability(consentId);
-    
-    const response = {
-      Data: {
-        FundsAvailableResult: {
-          FundsAvailable: fundsAvailable,
-          FundsAvailableDateTime: new Date().toISOString()
-        }
-      },
-      Links: {
-        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}`
-      } as Links,
-      Meta: {
-        TotalPages: 1
-      } as Meta
-    };
     
     // Publish funds confirmation event
     publishFundsConfirmationEvent(consentId, {
       consentId,
       fundsAvailable,
-      timestamp: response.Data.FundsAvailableResult.FundsAvailableDateTime
-    }).catch((error: Error) => {
+      timestamp: new Date()
+    }).catch(error => {
       console.error('Failed to publish funds confirmation event:', error);
     });
     
+    const response = {
+      Data: {
+        FundsAvailableResult: {
+          FundsAvailable: fundsAvailable
+        }
+      },
+      Links: {
+        Self: `${req.protocol}://${req.get('host')}${req.originalUrl}`
+      },
+      Meta: {
+        TotalPages: 1
+      }
+    };
+    
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error checking funds confirmation:', error);
+    console.error('Error checking funds availability:', error);
+    res.status(500).json({
+      ErrorCode: 'InternalServerError',
+      ErrorMessage: 'An internal server error occurred'
+    });
+  }
+};
+
+/**
+ * Update consent status
+ * @param req Express request
+ * @param res Express response
+ */
+export const updateConsentStatus = async (req: Request, res: Response) => {
+  try {
+    console.log('Update consent status request received:', {
+      params: req.params,
+      body: req.body,
+      headers: req.headers
+    });
+    
+    const { consentId } = req.params;
+    const { status } = req.body;
+    
+    // Validate the status
+    if (!status || !Object.values(ConsentStatus).includes(status)) {
+      return res.status(400).json({
+        ErrorCode: 'InvalidStatus',
+        ErrorMessage: 'Invalid consent status'
+      });
+    }
+    
+    // Get the consent
+    const consent = await getPaymentConsentById(consentId);
+    
+    if (!consent) {
+      console.error(`Consent not found: ${consentId}`);
+      return res.status(404).json({
+        ErrorCode: 'ResourceNotFound',
+        ErrorMessage: `Domestic payment consent with ID ${consentId} not found`
+      });
+    }
+    
+    console.log(`Found consent: ${consentId}, current status: ${consent.Status}, updating to: ${status}`);
+    
+    // Update the consent status
+    const updatedConsent = await updatePaymentConsentStatus(consentId, status);
+    
+    // Publish event for consent status update
+    if (updatedConsent) {
+      const eventType = mapConsentStatusToEventType(status);
+      if (eventType) {
+        publishPaymentConsentEvent(eventType, consentId, {
+          consentId,
+          status,
+          timestamp: updatedConsent.StatusUpdateDateTime
+        }).catch(error => {
+          console.error('Failed to publish consent status update event:', error);
+        });
+      }
+    }
+    
+    if (!updatedConsent) {
+      console.error(`Failed to update consent status: ${consentId}`);
+      return res.status(500).json({
+        ErrorCode: 'InternalServerError',
+        ErrorMessage: 'Failed to update consent status'
+      });
+    }
+    
+    console.log(`Successfully updated consent status to ${updatedConsent.Status}`);
+    
+    // Return the updated consent
+    const response = {
+      Data: {
+        ConsentId: updatedConsent.ConsentId,
+        Status: updatedConsent.Status,
+        StatusUpdateDateTime: updatedConsent.StatusUpdateDateTime
+      },
+      Links: {
+        Self: `${req.protocol}://${req.get('host')}/domestic-payment-consents/${consentId}`
+      },
+      Meta: {
+        TotalPages: 1
+      }
+    };
+    
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error updating consent status:', error);
     res.status(500).json({
       ErrorCode: 'InternalServerError',
       ErrorMessage: 'An internal server error occurred'

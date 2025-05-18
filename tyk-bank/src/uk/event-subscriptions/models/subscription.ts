@@ -8,6 +8,7 @@ export enum EventType {
   PAYMENT_CONSENT_AUTHORISED = 'payment-consent-authorised',
   PAYMENT_CONSENT_REJECTED = 'payment-consent-rejected',
   PAYMENT_CREATED = 'payment-created',
+  PAYMENT_PROCESSING = 'payment-processing',
   PAYMENT_COMPLETED = 'payment-completed',
   PAYMENT_FAILED = 'payment-failed',
   FUNDS_CONFIRMATION_COMPLETED = 'funds-confirmation-completed'
@@ -100,7 +101,7 @@ export interface EventNotification {
   txn: string;
   toe: number;
   events: {
-    'urn:uk:org:openbanking:events:resource-update': {
+    [key: string]: {
       subject: {
         subject_type: string;
         'http://openbanking.org.uk/rid': string;

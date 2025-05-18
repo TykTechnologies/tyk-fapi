@@ -1,43 +1,84 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { AuthStatus, useAuth } from '@/components/auth';
 
 /**
- * Header component with navigation
+ * Header component
+ * This component displays the application header with navigation and authentication status
  */
 export function Header() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
 
-  const navItems = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Accounts', href: '/accounts' },
-    { name: 'Payments', href: '/payments' },
-  ];
+  const isActive = (path: string) => {
+    return pathname === path;
+  };
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold">Banking TPP</h1>
-        </div>
-        <nav className="flex items-center space-x-4">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive ? 'default' : 'ghost'}
-                  className="text-sm"
+    <header className="sticky top-0 z-10 w-full border-b bg-white dark:bg-gray-950">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+            <span className="text-blue-600">TPP</span>
+            <span className="text-sm font-normal text-gray-500">FAPI 2.0 with DPoP</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link
+              href="/"
+              className={`text-sm ${
+                isActive('/') ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Home
+            </Link>
+            
+            {/* Only show protected routes when authenticated */}
+            {isAuthenticated && (
+              <>
+                <Link
+                  href="/accounts"
+                  className={`text-sm ${
+                    isActive('/accounts') ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  {item.name}
-                </Button>
-              </Link>
-            );
-          })}
-        </nav>
+                  Accounts
+                </Link>
+                <Link
+                  href="/payments"
+                  className={`text-sm ${
+                    isActive('/payments') ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Payments
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
+        <div className="flex items-center gap-4">
+          <AuthStatus className="hidden md:flex" />
+          <button
+            className="block md:hidden rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            aria-label="Menu"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </header>
   );
