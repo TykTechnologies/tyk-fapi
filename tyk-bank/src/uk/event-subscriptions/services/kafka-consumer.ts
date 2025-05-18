@@ -89,7 +89,7 @@ export const startConsumer = async (): Promise<void> => {
 export const processEvent = async (event: Event): Promise<void> => {
   try {
     // Find active subscriptions for this event type
-    const subscriptions = findActiveSubscriptionsForEventType(event.type);
+    const subscriptions = await findActiveSubscriptionsForEventType(event.type);
     
     if (subscriptions.length === 0) {
       console.log(`No active subscriptions found for event type: ${event.type}`);

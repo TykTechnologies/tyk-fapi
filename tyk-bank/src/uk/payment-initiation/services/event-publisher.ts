@@ -135,8 +135,6 @@ export const mapPaymentStatusToEventType = (status: PaymentStatus): EventType | 
   switch (status) {
     case PaymentStatus.PENDING:
       return EventType.PAYMENT_CREATED;
-    case PaymentStatus.ACCEPTED_SETTLEMENT_IN_PROCESS:
-      return EventType.PAYMENT_PROCESSING;
     case PaymentStatus.ACCEPTED_SETTLEMENT_COMPLETED:
       return EventType.PAYMENT_COMPLETED;
     case PaymentStatus.REJECTED:

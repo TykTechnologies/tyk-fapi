@@ -6,7 +6,7 @@ import paymentsRoutes from './routes/payments';
 import parRoutes from './routes/par';
 import authorizationRoutes from './routes/authorization';
 import db from '../../common/db/connection';
-import { startPaymentProcessor } from './services/payment-processor';
+// Payment processor removed to use setTimeout approach instead
 
 // Create Express app
 const app = express();
@@ -97,27 +97,20 @@ app.use((req: Request, res: Response) => {
 
 // Start server
 let server: any;
-let paymentProcessorInterval: NodeJS.Timeout;
 
 if (require.main === module) {
   server = app.listen(PORT, () => {
     console.log(`Tyk Bank Open Banking - UK Payment Initiation API running on port ${PORT}`);
     console.log(`Server URL: http://localhost:${PORT}`);
     
-    // Start the payment processor
-    console.log('Starting payment processor...');
-    paymentProcessorInterval = startPaymentProcessor();
+    // Payment processor removed to use setTimeout approach instead
   });
   
   // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM signal received: closing HTTP server');
     
-    // Stop the payment processor
-    if (paymentProcessorInterval) {
-      clearInterval(paymentProcessorInterval);
-      console.log('Payment processor stopped');
-    }
+    // Payment processor removed to use setTimeout approach instead
     
     server.close(async () => {
       console.log('HTTP server closed');
@@ -137,11 +130,7 @@ if (require.main === module) {
   process.on('SIGINT', () => {
     console.log('SIGINT signal received: closing HTTP server');
     
-    // Stop the payment processor
-    if (paymentProcessorInterval) {
-      clearInterval(paymentProcessorInterval);
-      console.log('Payment processor stopped');
-    }
+    // Payment processor removed to use setTimeout approach instead
     
     server.close(async () => {
       console.log('HTTP server closed');

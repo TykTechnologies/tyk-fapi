@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { 
-  createEventSubscription, 
-  getEventSubscriptionById, 
+import {
+  createEventSubscription,
+  getEventSubscriptionById,
   getAllEventSubscriptions,
   updateEventSubscription,
   deleteEventSubscription
@@ -18,7 +18,7 @@ import { Links, Meta } from '../../../common/types/common';
  * @param req Express request
  * @param res Express response
  */
-export const createEventSubscriptionController = (req: Request, res: Response) => {
+export const createEventSubscriptionController = async (req: Request, res: Response) => {
   try {
     const subscriptionRequest = req.body as EventSubscriptionRequest;
     
@@ -45,7 +45,7 @@ export const createEventSubscriptionController = (req: Request, res: Response) =
     }
     
     // Create new subscription
-    const newSubscription = createEventSubscription(
+    const newSubscription = await createEventSubscription(
       subscriptionRequest.Data.CallbackUrl,
       subscriptionRequest.Data.Version,
       subscriptionRequest.Data.EventTypes
@@ -81,9 +81,9 @@ export const createEventSubscriptionController = (req: Request, res: Response) =
  * @param req Express request
  * @param res Express response
  */
-export const getEventSubscriptionsController = (req: Request, res: Response) => {
+export const getEventSubscriptionsController = async (req: Request, res: Response) => {
   try {
-    const subscriptions = getAllEventSubscriptions();
+    const subscriptions = await getAllEventSubscriptions();
     
     const response = {
       Data: {
@@ -117,10 +117,10 @@ export const getEventSubscriptionsController = (req: Request, res: Response) => 
  * @param req Express request
  * @param res Express response
  */
-export const getEventSubscriptionByIdController = (req: Request, res: Response) => {
+export const getEventSubscriptionByIdController = async (req: Request, res: Response) => {
   try {
     const { EventSubscriptionId } = req.params;
-    const subscription = getEventSubscriptionById(EventSubscriptionId);
+    const subscription = await getEventSubscriptionById(EventSubscriptionId);
     
     if (!subscription) {
       return res.status(404).json({
@@ -159,13 +159,13 @@ export const getEventSubscriptionByIdController = (req: Request, res: Response) 
  * @param req Express request
  * @param res Express response
  */
-export const updateEventSubscriptionController = (req: Request, res: Response) => {
+export const updateEventSubscriptionController = async (req: Request, res: Response) => {
   try {
     const { EventSubscriptionId } = req.params;
     const subscriptionRequest = req.body as EventSubscriptionRequest;
     
     // Check if subscription exists
-    const existingSubscription = getEventSubscriptionById(EventSubscriptionId);
+    const existingSubscription = await getEventSubscriptionById(EventSubscriptionId);
     if (!existingSubscription) {
       return res.status(404).json({
         ErrorCode: 'ResourceNotFound',
@@ -196,7 +196,7 @@ export const updateEventSubscriptionController = (req: Request, res: Response) =
     }
     
     // Update subscription
-    const updatedSubscription = updateEventSubscription(
+    const updatedSubscription = await updateEventSubscription(
       EventSubscriptionId,
       subscriptionRequest.Data.CallbackUrl,
       subscriptionRequest.Data.Version,
@@ -240,12 +240,12 @@ export const updateEventSubscriptionController = (req: Request, res: Response) =
  * @param req Express request
  * @param res Express response
  */
-export const deleteEventSubscriptionController = (req: Request, res: Response) => {
+export const deleteEventSubscriptionController = async (req: Request, res: Response) => {
   try {
     const { EventSubscriptionId } = req.params;
     
     // Check if subscription exists
-    const existingSubscription = getEventSubscriptionById(EventSubscriptionId);
+    const existingSubscription = await getEventSubscriptionById(EventSubscriptionId);
     if (!existingSubscription) {
       return res.status(404).json({
         ErrorCode: 'ResourceNotFound',
@@ -254,7 +254,7 @@ export const deleteEventSubscriptionController = (req: Request, res: Response) =
     }
     
     // Delete subscription
-    const deleted = deleteEventSubscription(EventSubscriptionId);
+    const deleted = await deleteEventSubscription(EventSubscriptionId);
     
     if (!deleted) {
       return res.status(500).json({
