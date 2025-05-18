@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { fetchWithDPoP } from '@/lib/client/auth';
+import { fetchWithAuth } from '@/lib/client/auth';
 import Link from 'next/link';
 
 interface Account {
@@ -63,7 +63,7 @@ interface OpenBankingTransaction {
 
 /**
  * Accounts content component
- * This component displays the user's accounts using DPoP for authentication
+ * This component displays the user's accounts using session cookie authentication
  */
 export function AccountsContent() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -71,15 +71,23 @@ export function AccountsContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const dataFetchedRef = useRef(false);
 
   useEffect(() => {
+    // Skip the second fetch call in StrictMode
+    if (dataFetchedRef.current) return;
     async function fetchAccountsAndBalances() {
       try {
+        console.log(`[DEBUG] Starting to fetch accounts`);
         setIsLoading(true);
         setError(null);
 
-        // Fetch accounts using DPoP
-        const accountsResponse = await fetchWithDPoP('/api/accounts');
+        // Mark data as being fetched to prevent duplicate requests
+        dataFetchedRef.current = true;
+
+        // Fetch accounts using session cookie authentication
+        console.log(`[DEBUG] Calling /api/accounts endpoint`);
+        const accountsResponse = await fetchWithAuth('/api/accounts');
         
         if (!accountsResponse.ok) {
           throw new Error('Failed to fetch accounts');
@@ -100,7 +108,8 @@ export function AccountsContent() {
           }));
           
           // Fetch balances for all accounts
-          const balancesResponse = await fetchWithDPoP('/api/balances');
+          console.log(`[DEBUG] Calling /api/balances endpoint`);
+          const balancesResponse = await fetchWithAuth('/api/balances');
           
           if (balancesResponse.ok) {
             const balancesData = await balancesResponse.json();
@@ -147,7 +156,7 @@ export function AccountsContent() {
       setIsLoadingTransactions(true);
       
       // Fetch transactions for the selected account
-      const transactionsResponse = await fetchWithDPoP(`/api/accounts/${account.id}/transactions`);
+      const transactionsResponse = await fetchWithAuth(`/api/accounts/${account.id}/transactions`);
       
       if (transactionsResponse.ok) {
         const transactionsData = await transactionsResponse.json();

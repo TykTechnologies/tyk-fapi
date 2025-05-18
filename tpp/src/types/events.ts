@@ -72,7 +72,7 @@ export interface EventNotification {
   txn: string;
   toe: number;
   events: {
-    'urn:uk:org:openbanking:events:resource-update': {
+    [key: string]: {
       subject: {
         subject_type: string;
         'http://openbanking.org.uk/rid': string;

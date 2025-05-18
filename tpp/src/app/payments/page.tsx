@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { fetchWithDPoP } from '@/lib/client/auth';
+import { fetchWithAuth } from '@/lib/client/auth';
 
 interface Account {
   id: string;
@@ -57,7 +57,7 @@ export default function PaymentsPage() {
       setError(null);
 
       // Fetch account details
-      const accountResponse = await fetchWithDPoP(`/api/accounts/${accountId}`);
+      const accountResponse = await fetchWithAuth(`/api/accounts/${accountId}`);
       
       if (!accountResponse.ok) {
         throw new Error('Failed to fetch account details');
@@ -70,7 +70,7 @@ export default function PaymentsPage() {
         const account = accountData.Data.Account;
         
         // Fetch balance for this account
-        const balanceResponse = await fetchWithDPoP(`/api/accounts/${accountId}/balances`);
+        const balanceResponse = await fetchWithAuth(`/api/accounts/${accountId}/balances`);
         
         if (balanceResponse.ok) {
           const balanceData = await balanceResponse.json();
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
       setError(null);
       
       // Create payment consent
-      const consentResponse = await fetchWithDPoP('/api/payments/consents', {
+      const consentResponse = await fetchWithAuth('/api/payments/consents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -182,7 +182,7 @@ export default function PaymentsPage() {
       setConsentId(consentId);
       
       // Get the authorization URL for the consent
-      const authResponse = await fetchWithDPoP(`/api/payments/consents/${consentId}/authorize`, {
+      const authResponse = await fetchWithAuth(`/api/payments/consents/${consentId}/authorize`, {
         method: 'GET'
       });
       
@@ -212,7 +212,7 @@ export default function PaymentsPage() {
       
       // First, check the consent status
       console.log('Checking payment consent status:', consentId);
-      const consentResponse = await fetchWithDPoP(`/api/payments/consents/${consentId}`, {
+      const consentResponse = await fetchWithAuth(`/api/payments/consents/${consentId}`, {
         method: 'GET'
       });
       
@@ -226,7 +226,7 @@ export default function PaymentsPage() {
       
       // Now create payment with the consent
       // The API will handle the case where the consent is not authorized
-      const paymentResponse = await fetchWithDPoP('/api/payments', {
+      const paymentResponse = await fetchWithAuth('/api/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -13,6 +13,11 @@ export const API_GATEWAY_URLS = {
 export const AUTHORIZATION_SERVER_URL = process.env.AUTHORIZATION_SERVER_URL || 'http://localhost:8081/realms/fapi-demo';
 console.log('Config module loaded with AUTHORIZATION_SERVER_URL:', AUTHORIZATION_SERVER_URL);
 
+// Keycloak endpoints
+export const TOKEN_ENDPOINT = `${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/token`;
+export const PAR_ENDPOINT = `${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/ext/par/request`;
+export const AUTHORIZATION_ENDPOINT = `${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/auth`;
+
 // Log the configuration
 console.log('API Configuration:');
 console.log('- API_GATEWAY_URLS.ACCOUNT_INFORMATION:', API_GATEWAY_URLS.ACCOUNT_INFORMATION);

@@ -100,6 +100,7 @@ export const processEvent = async (event: Event): Promise<void> => {
     
     // Create event notification
     const notification = createEventNotification(event);
+    console.log(`DEBUG: Original event type: ${event.type}, notification event type: 'urn:uk:org:openbanking:events:resource-update'`);
     
     // Send notifications to all subscribers
     const sendPromises = subscriptions.map(subscription => {
@@ -124,7 +125,15 @@ export const processEvent = async (event: Event): Promise<void> => {
 export const createEventNotification = (event: Event): EventNotification => {
   const now = Math.floor(Date.now() / 1000);
   
-  return {
+  console.log(`DEBUG: Creating notification for event: ${event.id}`);
+  console.log(`DEBUG: Event type: ${event.type}, resourceType: ${event.resourceType}, resourceId: ${event.resourceId}`);
+  
+  // Create the specific event type URI
+  const specificEventTypeUri = `urn:uk:org:openbanking:events:${event.type}`;
+  console.log(`DEBUG: Using specific event type URI: ${specificEventTypeUri}`);
+  
+  // Create the event notification with both specific and generic event types
+  const notification: EventNotification = {
     iss: 'https://tyk-bank.example.com',
     iat: now,
     jti: event.id,
@@ -132,22 +141,40 @@ export const createEventNotification = (event: Event): EventNotification => {
     sub: `urn:uk:org:openbanking:${event.resourceType}:${event.resourceId}`,
     txn: `txn-${Date.now()}`,
     toe: now,
-    events: {
-      'urn:uk:org:openbanking:events:resource-update': {
-        subject: {
-          subject_type: event.resourceType,
-          'http://openbanking.org.uk/rid': event.resourceId,
-          'http://openbanking.org.uk/rty': event.resourceType,
-          'http://openbanking.org.uk/rlk': [
-            {
-              version: '1.0',
-              link: `https://tyk-bank.example.com/${event.resourceType}s/${event.resourceId}`
-            }
-          ]
+    events: {}
+  };
+  
+  // Add the specific event type
+  notification.events[specificEventTypeUri] = {
+    subject: {
+      subject_type: event.resourceType,
+      'http://openbanking.org.uk/rid': event.resourceId,
+      'http://openbanking.org.uk/rty': event.resourceType,
+      'http://openbanking.org.uk/rlk': [
+        {
+          version: '1.0',
+          link: `https://tyk-bank.example.com/${event.resourceType}s/${event.resourceId}`
         }
-      }
+      ]
     }
   };
+  
+  // Also include the generic event type for backward compatibility
+  notification.events['urn:uk:org:openbanking:events:resource-update'] = {
+    subject: {
+      subject_type: event.resourceType,
+      'http://openbanking.org.uk/rid': event.resourceId,
+      'http://openbanking.org.uk/rty': event.resourceType,
+      'http://openbanking.org.uk/rlk': [
+        {
+          version: '1.0',
+          link: `https://tyk-bank.example.com/${event.resourceType}s/${event.resourceId}`
+        }
+      ]
+    }
+  };
+  
+  return notification;
 };
 
 /**
@@ -156,6 +183,10 @@ export const createEventNotification = (event: Event): EventNotification => {
 export const sendNotification = async (callbackUrl: string, notification: EventNotification): Promise<void> => {
   try {
     console.log(`Sending notification to ${callbackUrl}`);
+    console.log(`DEBUG: Full notification being sent:`, JSON.stringify(notification, null, 2));
+    
+    // Log all event types in the notification
+    console.log(`DEBUG: Event types in notification:`, Object.keys(notification.events));
     
     const response = await axios.post(callbackUrl, notification, {
       headers: {

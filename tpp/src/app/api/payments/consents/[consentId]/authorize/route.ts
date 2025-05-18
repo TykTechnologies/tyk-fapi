@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, generateDpopProof, storePkceInSession } from '@/lib/server/auth/session';
 import { makeAuthenticatedRequest, getKeyPair, generateClientAssertion } from '@/lib/server/auth/oidcClient';
-import { AUTHORIZATION_SERVER_URL } from '@/app/api/config';
+import { AUTHORIZATION_SERVER_URL, PAR_ENDPOINT, AUTHORIZATION_ENDPOINT } from '@/app/api/config';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -184,7 +184,7 @@ export async function GET(
     const state = consentId;
     
     // Define the redirect URI
-    const redirectUri = `http://localhost:3010/payments?consentId=${consentId}`;
+    const redirectUri = `http://localhost:3010/callback?consentId=${consentId}`;
     
     // Generate PKCE code verifier and challenge
     const codeVerifier = generateCodeVerifier();
@@ -198,17 +198,16 @@ export async function GET(
     
     // Use PAR (Pushed Authorization Request) as required by Keycloak
     // First, make a PAR request to get a request_uri
-    const parEndpoint = `${authorizationServerUrl}/protocol/openid-connect/ext/par/request`;
-    console.log(`Making PAR request to: ${parEndpoint}`);
+    console.log(`Making PAR request to: ${PAR_ENDPOINT}`);
     
     // Get key pair for DPoP
     const keyPair = await getKeyPair();
     
     // Generate DPoP proof for PAR endpoint
-    const dpopProof = await generateDpopProof('POST', parEndpoint, keyPair);
+    const dpopProof = await generateDpopProof('POST', PAR_ENDPOINT, keyPair);
     
-    // Create PAR request
-    const parResponse = await fetch(parEndpoint, {
+    // Create PAR request with consent ID in scope
+    const parResponse = await fetch(PAR_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -217,13 +216,14 @@ export async function GET(
       body: new URLSearchParams({
         client_id: 'tpp',
         response_type: 'code',
-        scope: 'openid profile payments',
+        scope: `openid profile payments payment-consent`, // Include payment-consent scope for this flow
         redirect_uri: redirectUri,
         state,
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-        client_assertion: clientAssertion
+        client_assertion: clientAssertion,
+        consent_id: consentId // Add consent ID as a request parameter
       })
     });
     
@@ -254,7 +254,7 @@ export async function GET(
     console.log('PAR response data:', parData);
     
     // Build authorization URL with request_uri
-    const authorizationUrl = `${authorizationServerUrl}/protocol/openid-connect/auth?` +
+    const authorizationUrl = `${AUTHORIZATION_ENDPOINT}?` +
       new URLSearchParams({
         client_id: 'tpp',
         request_uri: parData.request_uri

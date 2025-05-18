@@ -23,7 +23,12 @@ const accountsApi = {
     try {
       const url = `${API_URL}/accounts`;
       console.log('Fetching accounts from URL:', url);
-      const response = await axios.get<AccountsResponse>(url);
+      
+      // Use withCredentials to send cookies with the request
+      const response = await axios.get<AccountsResponse>(url, {
+        withCredentials: true
+      });
+      
       console.log('Accounts API response status:', response.status);
       return response.data;
     } catch (error) {
@@ -39,7 +44,9 @@ const accountsApi = {
    */
   getAccountById: async (accountId: string): Promise<AccountResponse> => {
     try {
-      const response = await axios.get<AccountResponse>(`${API_URL}/accounts/${accountId}`);
+      const response = await axios.get<AccountResponse>(`${API_URL}/accounts/${accountId}`, {
+        withCredentials: true
+      });
       return response.data;
     } catch (error) {
       console.error(`Error fetching account ${accountId}:`, error);
@@ -53,7 +60,9 @@ const accountsApi = {
    */
   getAllBalances: async (): Promise<BalancesResponse> => {
     try {
-      const response = await axios.get<BalancesResponse>(`${API_URL}/balances`);
+      const response = await axios.get<BalancesResponse>(`${API_URL}/balances`, {
+        withCredentials: true
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching all balances:', error);
@@ -68,7 +77,9 @@ const accountsApi = {
    */
   getAccountBalances: async (accountId: string): Promise<BalanceResponse> => {
     try {
-      const response = await axios.get<BalanceResponse>(`${API_URL}/accounts/${accountId}/balances`);
+      const response = await axios.get<BalanceResponse>(`${API_URL}/accounts/${accountId}/balances`, {
+        withCredentials: true
+      });
       return response.data;
     } catch (error) {
       console.error(`Error fetching balances for account ${accountId}:`, error);
@@ -88,6 +99,7 @@ const accountsApi = {
       console.log(`Fetching transactions from: ${url}`);
       
       const response = await axios.get<TransactionResponse>(url, {
+        withCredentials: true,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',

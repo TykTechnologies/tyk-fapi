@@ -101,39 +101,17 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Make an authenticated API request with DPoP
- * This function automatically adds the DPoP proof and access token to the request
+ * Make an authenticated API request
+ * This function uses the session cookie for authentication
+ * All token handling is done on the server side
  */
-export async function fetchWithDPoP(
+export async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  // Get DPoP token from the server
-  const dpopResponse = await fetch('/api/auth/dpop', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      method: options.method || 'GET',
-      url,
-    }),
-  });
-  
-  if (!dpopResponse.ok) {
-    throw new Error('Failed to get DPoP token');
-  }
-  
-  const { dpopProof, accessToken } = await dpopResponse.json();
-  
-  // Add DPoP proof and access token to request headers
-  const headers = new Headers(options.headers);
-  headers.set('DPoP', dpopProof);
-  headers.set('Authorization', `DPoP ${accessToken}`);
-  
-  // Make the request
+  // Make the request with credentials to include cookies
   return fetch(url, {
     ...options,
-    headers,
+    credentials: 'include', // Include cookies in the request
   });
 }

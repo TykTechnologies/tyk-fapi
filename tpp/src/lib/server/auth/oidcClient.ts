@@ -62,8 +62,8 @@ export function storeDpopNonce(nonce: string) {
 /**
  * Generate a DPoP proof for a specific HTTP method and URL
  */
-export async function generateDpopProof(method: string, url: string) {
-  const pair = await getKeyPair();
+export async function generateDpopProof(method: string, url: string, keyPair?: jose.GenerateKeyPairResult) {
+  const pair = keyPair || await getKeyPair();
   const jwk = await jose.exportJWK(pair.publicKey);
   
   // Remove private key components
@@ -168,10 +168,11 @@ export async function makeAuthenticatedRequest(
   method: string,
   url: string,
   accessToken: string,
-  body?: any
+  body?: any,
+  keyPair?: jose.GenerateKeyPairResult
 ) {
   // Generate DPoP proof
-  const dpopProof = await generateDpopProof(method, url);
+  const dpopProof = await generateDpopProof(method, url, keyPair);
   
   // Make request
   const response = await fetch(url, {

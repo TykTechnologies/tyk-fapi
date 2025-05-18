@@ -24,14 +24,37 @@ export async function POST(req: NextRequest) {
     console.log('Received event notification from bank:');
     console.log(JSON.stringify(notification, null, 2));
     
-    // Extract event details for better logging
-    const eventType = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.subject_type || 'unknown';
-    const resourceId = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.['http://openbanking.org.uk/rid'] || 'unknown';
-    const resourceType = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.['http://openbanking.org.uk/rty'] || 'unknown';
+    // Log all event types in the notification
+    console.log('Event types in notification:', Object.keys(notification.events));
     
-    console.log(`Event Type: ${eventType}`);
-    console.log(`Resource ID: ${resourceId}`);
-    console.log(`Resource Type: ${resourceType}`);
+    // Check for specific event types first
+    const specificEventTypes = Object.keys(notification.events).filter(
+      key => key !== 'urn:uk:org:openbanking:events:resource-update'
+    );
+    
+    if (specificEventTypes.length > 0) {
+      // Process specific event types
+      for (const eventTypeUri of specificEventTypes) {
+        const eventData = notification.events[eventTypeUri];
+        const specificEventType = eventTypeUri.split(':').pop() || 'unknown';
+        const resourceId = eventData.subject?.['http://openbanking.org.uk/rid'] || 'unknown';
+        const resourceType = eventData.subject?.['http://openbanking.org.uk/rty'] || 'unknown';
+        
+        console.log(`Specific Event Type: ${specificEventType}`);
+        console.log(`Resource ID: ${resourceId}`);
+        console.log(`Resource Type: ${resourceType}`);
+      }
+    } else {
+      // Fall back to generic event type
+      const eventType = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.subject_type || 'unknown';
+      const resourceId = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.['http://openbanking.org.uk/rid'] || 'unknown';
+      const resourceType = notification.events?.['urn:uk:org:openbanking:events:resource-update']?.subject?.['http://openbanking.org.uk/rty'] || 'unknown';
+      
+      console.log(`Generic Event Type: ${eventType}`);
+      console.log(`Resource ID: ${resourceId}`);
+      console.log(`Resource Type: ${resourceType}`);
+    }
+    
     console.log(`Timestamp: ${new Date(notification.toe * 1000).toISOString()}`);
     
     // Return 202 Accepted

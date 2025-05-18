@@ -1,61 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getKeyPair } from '@/lib/server/auth/oidcClient';
-import { getSession, generateDpopProof } from '@/lib/server/auth/session';
 
 /**
- * DPoP endpoint
- * This endpoint generates a DPoP proof for client-side requests
+ * This endpoint has been removed for FAPI 2.0 compliance
+ *
+ * In a FAPI 2.0 compliant architecture, the frontend must never directly access tokens
+ * or generate DPoP proofs. All token operations should be handled by the backend.
+ *
+ * Instead, the frontend should use session cookies for authentication with the backend,
+ * and the backend should handle all token operations when communicating with external APIs.
  */
 export async function POST(request: NextRequest) {
-  try {
-    // Get session ID from cookie
-    const sessionId = request.cookies.get('session_id')?.value;
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'No session found' },
-        { status: 401 }
-      );
-    }
-    
-    // Get session data
-    const { data: session } = await getSession(sessionId);
-    
-    // Check if user is authenticated
-    if (!session.isAuthenticated || !session.accessToken) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-    
-    // Get request body
-    const body = await request.json();
-    const { method, url } = body;
-    
-    // Validate required parameters
-    if (!method || !url) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
-    }
-    
-    // Get key pair for DPoP
-    const keyPair = await getKeyPair();
-    
-    // Generate DPoP proof
-    const dpopProof = await generateDpopProof(method, url, keyPair);
-    
-    // Return DPoP proof and access token
-    return NextResponse.json({
-      dpopProof,
-      accessToken: session.accessToken
-    });
-  } catch (error) {
-    console.error('DPoP error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate DPoP proof' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      error: 'This endpoint has been removed for FAPI 2.0 compliance',
+      message: 'Please use the session cookie for authentication with the backend'
+    },
+    { status: 410 } // Gone status code
+  );
 }
