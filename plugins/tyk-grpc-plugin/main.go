@@ -482,6 +482,7 @@ func (d *DPoPHandler) parseAndValidateAccessToken(tokenString string) (jwt.MapCl
 }
 
 // validateDPoPProof validates the DPoP proof
+// validateDPoPProof validates the DPoP proof
 func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, requestURL string) error {
 	// Parse the DPoP proof
 	token, _, err := new(jwt.Parser).ParseUnverified(dpopProof, jwt.MapClaims{})
@@ -489,7 +490,6 @@ func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, requestU
 		return fmt.Errorf("failed to parse DPoP proof: %w", err)
 	}
 
-	// Get the claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return errors.New("invalid DPoP proof claims")
@@ -505,30 +505,33 @@ func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, requestU
 	// Check htu (HTTP URL)
 	htu, ok := claims["htu"].(string)
 	if !ok {
-		return fmt.Errorf("missing htu claim")
+		return errors.New("missing htu claim")
 	}
 
-	// Extract the path from the URL
-	urlPath := requestURL
-	if strings.Contains(requestURL, "://") {
-		parsedURL, parseErr := url.Parse(requestURL)
-		if parseErr == nil {
-			urlPath = parsedURL.Path
-		}
+	// Parse both URLs to normalize them
+	var requestParsedURL, htuParsedURL *url.URL
+	var parseErr error
+
+	// Parse the request URL
+	requestParsedURL, parseErr = url.Parse(requestURL)
+	if parseErr != nil {
+		// If parsing fails, use the raw string
+		requestParsedURL = &url.URL{Path: requestURL}
 	}
 
-	// Extract the path from htu as well for fair comparison
-	htuPath := htu
-	if strings.Contains(htu, "://") {
-		parsedHtu, parseErr := url.Parse(htu)
-		if parseErr == nil {
-			htuPath = parsedHtu.Path
-		}
+	// Parse the htu URL
+	htuParsedURL, parseErr = url.Parse(htu)
+	if parseErr != nil {
+		// If parsing fails, use the raw string
+		htuParsedURL = &url.URL{Path: htu}
 	}
 
-	// Compare the path parts only
-	if htuPath != urlPath {
-		return fmt.Errorf("invalid htu claim: expected %s, got %s", urlPath, htu)
+	// Compare just the path components without query parameters
+	// This handles cases where the client doesn't include query parameters in the DPoP proof
+	if requestParsedURL.Path != htuParsedURL.Path {
+		log.Warnf("URL path mismatch: request path %s vs DPoP htu path %s",
+			requestParsedURL.Path, htuParsedURL.Path)
+		return fmt.Errorf("invalid htu claim: path mismatch")
 	}
 
 	// Check jti (JWT ID) - should be unique
