@@ -431,9 +431,9 @@ func (d *DPoPHandler) DPoPCheck(object *pb.Object) (*pb.Object, error) {
 	}
 
 	// Log all claims for debugging
-	log.Info("Access token claims:")
+	log.Debug("Access token claims:")
 	for k, v := range accessTokenClaims {
-		log.Infof("  %s: %v", k, v)
+		log.Debugf("  %s: %v", k, v)
 	}
 
 	// Get the DPoP fingerprint from the access token
@@ -517,8 +517,17 @@ func (d *DPoPHandler) validateDPoPProof(dpopProof, expectedJkt, method, requestU
 		}
 	}
 
-	// Compare the path part only
-	if htu != urlPath {
+	// Extract the path from htu as well for fair comparison
+	htuPath := htu
+	if strings.Contains(htu, "://") {
+		parsedHtu, parseErr := url.Parse(htu)
+		if parseErr == nil {
+			htuPath = parsedHtu.Path
+		}
+	}
+
+	// Compare the path parts only
+	if htuPath != urlPath {
 		return fmt.Errorf("invalid htu claim: expected %s, got %s", urlPath, htu)
 	}
 
