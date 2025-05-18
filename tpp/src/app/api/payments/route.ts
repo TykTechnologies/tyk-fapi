@@ -31,9 +31,60 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     console.log('Payment request body:', body);
+    console.log('Payment request body.Data:', body.Data);
+    console.log('Payment request ConsentId:', body.Data?.ConsentId);
+    console.log('Payment request Initiation:', body.Data?.Initiation);
+    
+    // If Initiation is missing, try to fetch the consent data
+    if (body.Data && body.Data.ConsentId && !body.Data.Initiation) {
+      console.log('Initiation is missing, fetching consent data...');
+      
+      // Get the payment initiation API URL
+      const paymentInitiationApiUrl = process.env.PAYMENT_INITIATION_API_URL || 'http://localhost:8080/payment-initiation';
+      const consentUrl = `${paymentInitiationApiUrl}/domestic-payment-consents/${body.Data.ConsentId}`;
+      
+      try {
+        // Fetch the consent data
+        const consentResponse = await makeAuthenticatedRequest(
+          'GET',
+          consentUrl,
+          session.accessToken
+        );
+        
+        if (!consentResponse.ok) {
+          console.error('Failed to fetch consent data:', {
+            status: consentResponse.status,
+            statusText: consentResponse.statusText
+          });
+          return NextResponse.json(
+            { error: 'Failed to fetch consent data' },
+            { status: 500 }
+          );
+        }
+        
+        // Parse the consent data
+        const consentData = await consentResponse.json();
+        console.log('Fetched consent data:', consentData);
+        
+        // Add the Initiation field to the request body
+        body.Data.Initiation = consentData.Data.Initiation;
+        console.log('Updated payment request body:', body);
+      } catch (error) {
+        console.error('Error fetching consent data:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch consent data' },
+          { status: 500 }
+        );
+      }
+    }
     
     // Validate request body
     if (!body.Data || !body.Data.ConsentId || !body.Data.Initiation) {
+      console.error('Invalid payment request body:', {
+        hasData: !!body.Data,
+        hasConsentId: !!body.Data?.ConsentId,
+        hasInitiation: !!body.Data?.Initiation
+      });
       return NextResponse.json(
         { error: 'Invalid request body' },
         { status: 400 }

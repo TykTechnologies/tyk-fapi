@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { generateDpopProof, generateClientAssertion } from '@/lib/server/auth/oidcClient';
 import { getSession, storePkceInSession } from '@/lib/server/auth/session';
+import { AUTHORIZATION_SERVER_URL } from '@/app/api/config';
 
 /**
  * Pushed Authorization Request (PAR) endpoint
@@ -38,12 +39,12 @@ export async function POST(request: NextRequest) {
     
     // Generate DPoP proof for PAR endpoint
     // Using the correct PAR endpoint URL from Keycloak
-    const parEndpoint = 'http://localhost:8081/realms/fapi-demo/protocol/openid-connect/ext/par/request';
+    const parEndpoint = `${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/ext/par/request`;
     const dpopProof = await generateDpopProof('POST', parEndpoint);
     
     // Generate client assertion for private_key_jwt authentication
     const clientAssertion = await generateClientAssertion(
-      'http://localhost:8081/realms/fapi-demo'
+      AUTHORIZATION_SERVER_URL
     );
     
     console.log('Making PAR request to:', parEndpoint);
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     console.log('PAR response data:', parData);
     
     // Build authorization URL with request_uri
-    const authorizationUrl = new URL('http://localhost:8081/realms/fapi-demo/protocol/openid-connect/auth');
+    const authorizationUrl = new URL(`${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/auth`);
     authorizationUrl.searchParams.append('client_id', clientId);
     authorizationUrl.searchParams.append('request_uri', parData.request_uri);
     

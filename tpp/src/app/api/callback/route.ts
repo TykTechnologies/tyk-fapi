@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as jose from 'jose';
 import { getKeyPair, generateClientAssertion } from '@/lib/server/auth/oidcClient';
 import { getSession, storeTokensInSession, generateDpopProof } from '@/lib/server/auth/session';
+import { AUTHORIZATION_SERVER_URL } from '@/app/api/config';
 
 /**
  * Callback endpoint
@@ -61,12 +62,12 @@ export async function GET(request: NextRequest) {
     const keyPair = await getKeyPair();
     
     // Generate DPoP proof for token endpoint
-    const tokenEndpoint = 'http://localhost:8081/realms/fapi-demo/protocol/openid-connect/token';
+    const tokenEndpoint = `${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/token`;
     const dpopProof = await generateDpopProof('POST', tokenEndpoint, keyPair);
     
     // Generate client assertion for private_key_jwt authentication
     const clientAssertion = await generateClientAssertion(
-      'http://localhost:8081/realms/fapi-demo'
+      AUTHORIZATION_SERVER_URL
     );
     
     console.log('API Callback - Exchanging code for tokens');

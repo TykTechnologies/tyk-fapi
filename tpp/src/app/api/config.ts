@@ -10,7 +10,8 @@ export const API_GATEWAY_URLS = {
 };
 
 // Authorization server URL from environment variables
-export const AUTHORIZATION_SERVER_URL = process.env.AUTHORIZATION_SERVER_URL || 'http://localhost:3002';
+export const AUTHORIZATION_SERVER_URL = process.env.AUTHORIZATION_SERVER_URL || 'http://localhost:8081/realms/fapi-demo';
+console.log('Config module loaded with AUTHORIZATION_SERVER_URL:', AUTHORIZATION_SERVER_URL);
 
 // Log the configuration
 console.log('API Configuration:');

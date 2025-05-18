@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as jose from 'jose';
 import { getKeyPair } from '@/lib/server/auth/oidcClient';
 import { getSession, storePkceInSession } from '@/lib/server/auth/session';
+import { AUTHORIZATION_SERVER_URL } from '@/app/api/config';
 
 /**
  * Authorization endpoint
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     await storePkceInSession(sessionId, codeVerifier, state);
     
     // Build authorization URL
-    const authorizationUrl = new URL('http://localhost:8081/realms/fapi-demo/protocol/openid-connect/auth');
+    const authorizationUrl = new URL(`${AUTHORIZATION_SERVER_URL}/protocol/openid-connect/auth`);
     authorizationUrl.searchParams.append('client_id', clientId);
     authorizationUrl.searchParams.append('response_type', responseType);
     authorizationUrl.searchParams.append('scope', scope);

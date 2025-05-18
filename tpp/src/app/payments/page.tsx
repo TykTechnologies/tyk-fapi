@@ -210,7 +210,22 @@ export default function PaymentsPage() {
       setIsLoading(true);
       setError(null);
       
-      // Create payment with the authorized consent
+      // First, check the consent status
+      console.log('Checking payment consent status:', consentId);
+      const consentResponse = await fetchWithDPoP(`/api/payments/consents/${consentId}`, {
+        method: 'GET'
+      });
+      
+      if (!consentResponse.ok) {
+        const errorData = await consentResponse.json();
+        throw new Error(errorData.error || 'Failed to fetch payment consent');
+      }
+      
+      const consentData = await consentResponse.json();
+      console.log('Payment consent status:', consentData.Data.Status);
+      
+      // Now create payment with the consent
+      // The API will handle the case where the consent is not authorized
       const paymentResponse = await fetchWithDPoP('/api/payments', {
         method: 'POST',
         headers: {
@@ -218,7 +233,8 @@ export default function PaymentsPage() {
         },
         body: JSON.stringify({
           Data: {
-            ConsentId: consentId
+            ConsentId: consentId,
+            Initiation: consentData.Data.Initiation
           },
           Risk: {}
         })
