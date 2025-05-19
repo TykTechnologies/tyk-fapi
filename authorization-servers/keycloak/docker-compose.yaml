@@ -13,6 +13,7 @@ services:
       - "8081:8081"
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./themes/bank-theme:/opt/keycloak/themes/bank-theme
 
 volumes:
   keycloak_data:

@@ -1,0 +1,26 @@
+/* Simple width control for login card */
+.login-pf-page .card-pf {
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Add a subtle shadow and rounded corners */
+.card-pf {
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure the form doesn't overflow */
+#kc-form,
+#kc-form-wrapper {
+    max-width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .login-pf-page .card-pf {
+        width: 90%;
+        max-width: 90%;
+    }
+}
