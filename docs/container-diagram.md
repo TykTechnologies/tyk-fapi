@@ -5,10 +5,10 @@ This diagram shows the major containers (applications, data stores) that make up
 ```mermaid
 flowchart TB
     %% People/Actors
-    endUser(["End User
-    A customer of the bank who wants to access their accounts via a TPP"])
-    tppDeveloper(["TPP Developer
-    Developer building applications that integrate with the bank's API"])
+    psu(["PSU (Payment Services User)
+    A customer of the bank who accesses their accounts and initiates payments through third-party providers"])
+    tpp(["TPP (Third Party Provider)
+    Companies providing financial services like account aggregators, credit checkers, and savings apps that integrate with banks"])
     
     %% Tyk FAPI Accelerator System with Containers
     subgraph tykFAPI ["Tyk FAPI Accelerator"]
@@ -37,9 +37,9 @@ flowchart TB
     kafka --- kafkaLabel
     
     %% Relationships
-    endUser -->|"Uses
+    psu -->|"Uses
     (HTTPS)"| tppApp
-    tppDeveloper -->|"Develops
+    tpp -->|"Develops
     (IDE)"| tppApp
     tppApp -->|"Makes API calls to
     (HTTPS)"| apiGateway
@@ -60,16 +60,22 @@ flowchart TB
     (JWS/HTTPS Webhooks)"| tppApp
     
     %% Styling
-    classDef person fill:#08427B,color:#fff,stroke:#052E56
-    classDef container fill:#438DD5,color:#fff,stroke:#2E6295
-    classDef database fill:#438DD5,color:#fff,stroke:#2E6295
-    classDef queue fill:#438DD5,color:#fff,stroke:#2E6295
+    classDef person fill:#335FFD,color:#fff,stroke:#1A3FBD
+    classDef tppStyle fill:#335FFD,color:#fff,stroke:#1A3FBD
+    classDef component fill:#5900CB,color:#fff,stroke:#3D0087
+    classDef authStyle fill:#00A3A0,color:#fff,stroke:#007370
+    classDef bankStyle fill:#C01F8B,color:#fff,stroke:#901568
+    classDef kafkaStyle fill:#E09D00,color:#fff,stroke:#A87700
+    classDef database fill:#5900CB,color:#fff,stroke:#3D0087
     classDef label fill:none,stroke:none
     
-    class endUser,tppDeveloper person
-    class tppApp,apiGateway,authServer,tykBank container
+    class psu,tpp person
+    class tppApp tppStyle
+    class apiGateway component
+    class authServer authStyle
+    class tykBank bankStyle
     class database database
-    class kafka queue
+    class kafka kafkaStyle
     class databaseLabel,kafkaLabel label
 ```
 
@@ -77,7 +83,7 @@ flowchart TB
 
 The container diagram shows the major components of the Tyk FAPI Accelerator:
 
-1. **TPP Application**: A NextJS application that demonstrates how a third-party provider would interact with a bank's API. It provides a user interface for viewing account information, initiating payments, and testing authorization flows.
+1. **TPP Application**: A NextJS application that demonstrates how a Third Party Provider (TPP) would interact with a bank's API. It provides a user interface for Payment Service Users (PSUs) to view account information, initiate payments, and test authorization flows.
 
 2. **API Gateway**: The Tyk Gateway that secures and routes requests to the appropriate backend services while enforcing FAPI compliance. It validates DPoP tokens, protects against replay attacks, validates JWTs, ensures routing only to endpoints defined in the specs, and handles event notifications. It subscribes to Kafka events and dispatches those events to subscribed TPPs, signing the webhook requests using JWS (JSON Web Signature) to ensure authenticity.
 
