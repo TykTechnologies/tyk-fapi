@@ -1,0 +1,123 @@
+info:
+  title: Event Dispatcher
+  version: 1.0.0
+openapi: 3.0.3
+servers:
+  - url: http://gateway.ahmet:8080/event-dispatcher/
+x-tyk-streaming:
+  streams:
+    default_stream:
+      input:
+        kafka:
+          addresses:
+            - localhost:9093
+          batching:
+            count: 10
+            period: 1s
+          consumer_group: event-dispatcher
+          topics:
+            - payment-events
+      logger:
+        add_timestamp: true
+        format: json
+        level: INFO
+        static_fields:
+          service: event-dispatcher
+      metrics:
+        prometheus: {}
+      output:
+        broker:
+          outputs:
+            - http_client:
+                backoff_on:
+                  - 429
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+                drop_on:
+                  - 400
+                  - 401
+                  - 403
+                  - 404
+                  - 405
+                headers:
+                  Content-Type: application/jwt
+                  x-fapi-financial-id: TYK12345
+                  x-fapi-interaction-id: ${! uuid_v4() }
+                  x-rewrite-target: ${! meta("url") }
+                max_retry_backoff: 60s
+                retry_period: 10s
+                url: http://localhost:8080/event-notifications-forwarder/
+                verb: POST
+            - stdout: {}
+      pipeline:
+        processors:
+          - bloblang: |
+              meta "event_type" = this.type
+              meta "resource_id" = this.resourceId
+              meta "resource_type" = this.resourceType
+              meta "timestamp" = this.timestamp
+              root = this
+          - sql_select:
+              args_mapping: root = [meta("event_type")]
+              columns:
+                - subscription_id
+                - callback_url
+              driver: postgres
+              dsn: >-
+                postgres://tyk_bank:tyk_bank_password@localhost:5432/tyk_bank?sslmode=disable
+              table: event_subscriptions
+              where: status = 'Active' AND $1 = ANY(event_types)
+          - bloblang: |
+              root = this.map_each(subscription -> {
+                "subscription_id": subscription.subscription_id,
+                "callback_url": subscription.callback_url,
+                "event": meta()
+              })
+          - unarchive:
+              format: json_array
+          - bloblang: |
+              meta "url" = this.callback_url
+              meta "subscription_id" = this.subscription_id
+              root = {
+                "iss": "https://tyk-bank.example.com",
+                "iat": timestamp_unix(),
+                "jti": uuid_v4(),
+                "aud": this.callback_url,
+                "sub": "urn:uk:org:openbanking:" + meta("resource_type") + ":" + meta("resource_id"),
+                "txn": "txn-" + uuid_v4(),
+                "toe": timestamp_unix(),
+                "events": {
+                  "urn:uk:org:openbanking:events:resource-update": {
+                    "subject": {
+                      "subject_type": meta("resource_type"),
+                      "http://openbanking.org.uk/rid": meta("resource_id"),
+                      "http://openbanking.org.uk/rty": meta("resource_type"),
+                      "http://openbanking.org.uk/rlk": [
+                        {
+                          "version": "1.0",
+                          "link": "http://localhost:8080/payment-initiation/" + meta("resource_type") + "s/" + meta("resource_id") + "/payment-details"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+security: []
+paths: {}
+components:
+  securitySchemes: {}
+x-tyk-api-gateway:
+  info:
+    dbId: 682707976877c2091207cfc3
+    id: c59294296178406e634ce38422b9bc94
+    orgId: 681a4fd66877c25ae67cf60d
+    name: Event Dispatcher
+    state:
+      active: true
+      internal: false
+  server:
+    listenPath:
+      strip: true
+      value: /event-dispatcher/

@@ -1,58 +1,43 @@
 # Tyk FAPI Accelerator - Context Diagram
 
-This diagram shows the Tyk FAPI Accelerator system in its environment, including users, external systems, and key actors.
+This diagram shows the Tyk FAPI Accelerator system in its environment, including users and key actors.
 
 ```mermaid
 flowchart TB
     %% People/Actors
-    endUser(["End User
-    A customer of the bank who wants to access their accounts via a TPP"])
-    tppDeveloper(["TPP Developer
-    Developer building applications that integrate with the bank's API"])
-    bankAdmin(["Bank Administrator
-    Administrator managing the bank's API and services"])
+    psu(["PSU (Payment Services User)
+    A customer of the bank who accesses their accounts and initiates payments through third-party providers"])
+    tpp(["TPP (Third Party Provider)
+    Companies providing financial services like account aggregators, credit checkers, and savings apps that integrate with banks"])
+    aspsp(["ASPSP (Account Servicing Payment Service Provider)
+    Banks and financial institutions that provide account and payment APIs to authorized third parties"])
     
     %% Systems
     subgraph tykFAPI ["Tyk FAPI Accelerator"]
         tykFAPISystem["Provides FAPI-compliant APIs for account information and payment initiation"]
     end
     
-    %% External Systems
-    subgraph external ["External Systems"]
-        otherBanks["Other Banks
-        Other financial institutions"]
-        regulatorySystems["Regulatory Systems
-        Financial regulatory systems"]
-    end
-    
     %% Relationships
-    endUser -->|"Views accounts,
+    psu -->|"Views accounts,
     initiates payments"| tykFAPI
-    tppDeveloper -->|"Develops against,
-    integrates with"| tykFAPI
-    bankAdmin -->|"Configures, monitors"| tykFAPI
-    tykFAPI -->|"Interacts with"| otherBanks
-    tykFAPI -->|"Reports to,
-    complies with"| regulatorySystems
+    tpp -->|"Integrates with,
+    consumes APIs from"| tykFAPI
+    aspsp -->|"Configures, monitors,
+    provides services through"| tykFAPI
     
     %% Styling
-    classDef person fill:#08427B,color:#fff,stroke:#052E56
-    classDef system fill:#1168BD,color:#fff,stroke:#0B4884
-    classDef external fill:#999999,color:#fff,stroke:#6B6B6B
-    
-    class endUser,tppDeveloper,bankAdmin person
+    classDef person fill:#335FFD,color:#fff,stroke:#1A3FBD
+    classDef system fill:#5900CB,color:#fff,stroke:#3D0087
+    class psu,tpp,aspsp person
     class tykFAPISystem system
-    class otherBanks,regulatorySystems external
 ```
 
 ## Description
 
 The context diagram shows the Tyk FAPI Accelerator system and its interactions with:
 
-1. **End Users**: Customers of the bank who access their accounts and initiate payments through third-party providers
-2. **TPP Developers**: Developers who build applications that integrate with the bank's API
-3. **Bank Administrators**: Staff who configure and monitor the bank's API and services
-4. **Other Banks**: External financial institutions that may interact with the system
-5. **Regulatory Systems**: Financial regulatory systems that the accelerator must comply with
+1. **PSU (Payment Services User)**: Customers of banks who access their accounts and initiate payments through third-party providers
+2. **TPP (Third Party Provider)**: Companies that provide financial services such as account aggregation, credit checking, and savings applications by integrating with banks' APIs
+3. **ASPSP (Account Servicing Payment Service Provider)**: Banks and financial institutions that expose their account and payment services through APIs to authorized third parties
 
-This high-level view establishes the boundaries of the system and its external dependencies.
+This high-level view establishes the boundaries of the system and its key interactions.
