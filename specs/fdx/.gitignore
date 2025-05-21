@@ -1,0 +1,3 @@
+# Ignore all YAML files in this directory
+*.yaml
+*.yml
