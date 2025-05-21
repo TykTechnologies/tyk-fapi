@@ -1,3 +1,2 @@
 # Ignore all YAML files in this directory
-*.yaml
-*.yml
+/FDX API v6.2
