@@ -1,0 +1,35 @@
+{{$error := .error}}
+<div class="d-flex flex-column align-items-center justify-content-center flex-grow-1 login-page-wrapper">
+  <a href="/" class="logo d-flex">
+    <img src="/assets/images/new-logo.svg" alt="Tyk Logo" />
+  </a>
+  <div class="login-form-wrapper">
+    <label class="title-inter login-form-title mt-5">Log in to your Tyk Developer Portal account</label>
+    {{ if $error }}
+    <div class="alert alert-danger" role="alert">
+      <i class="tyk-icon tykon tykon-warning "></i>
+      <div class="alert__content">{{ .error }}</div>
+    </div>
+    {{ end }}
+    <form action="login" method="post" class="mb-5">
+      <div class="form-group">
+        <label class="form-label login-form-label mb-1">Email address</label>
+        <input type="email" name="login" class="form-control login-form-input" value="" required />
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label login-form-label mb-1">Password</label>
+        <input type="password" name="password" class="form-control login-form-input" value="" required autocomplete="off" />
+      </div>
+      <div class="form-group mt-2">
+        <a href="/auth/password/new" class="brand-link login-form-label">Forgot Password?</a>
+      </div>
+      <div class="form-group mt-4 text-center">
+        <input type="submit" name="submit" class="btn portal-primary" value="Log in" />
+      </div>
+      <div class="form-group text-center">
+        <span class="login-form-label login-form-info">Don’t have an account?</span>
+        <a href="/auth/password/register" class="brand-link login-form-label">Sign up</a>
+      </div>
+    </form>
+  </div>
+</div>

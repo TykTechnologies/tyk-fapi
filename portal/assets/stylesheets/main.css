@@ -1,0 +1,296 @@
+@import './components/select.css';
+@import './components/buttons.css';
+@import './components/card.css';
+@import './components/input.css';
+@import './components/table.css';
+@import './components/alert.css';
+@import './components/modal.css';
+@import './components/tooltip.css';
+
+@import './pages/catalogue.css';
+@import './pages/login.css';
+@import './pages/home.css';
+@import './pages/api-product.css';
+@import './pages/cart.css';
+@import './pages/flip-flop.css';
+@import './pages/blog.css';
+@import './pages/app.css';
+@import './pages/users.css';
+@import './pages/analytics.css';
+
+@import './common/form.css';
+@import './common/navigation.css';
+@import './common/typography.css';
+@import './common/tyk-icons.css';
+@import './common/texts.css';
+@import './common/layout.css';
+
+/*
+  Global Variables
+*/
+
+:root {
+  /* Banking Color Palette - Professional & Trustworthy */
+  --tdp-primary: #1E3A8A;
+  --tdp-primary-dark: #1E40AF;
+  --tdp-primary-light: #3B82F6;
+  --tdp-primary-success-light: #D1FAE5;
+  --tdp-secondary: #10B981;
+  --tdp-secondary-dark: #059669;
+  --tdp-light-blue: #60A5FA;
+  --tdp-light-gray: #F9FAFB;
+  --tdp-light-purple: #8B5CF6;
+  --tdp-primary-danger-light: #FEE2E2;
+  --tdp-danger-light : #EF4444;
+  --tdp-danger-dark : #DC2626;
+  --tdp-primary-warning-light: #FEF3C7;
+  --tdp-warning-light : #F59E0B;
+  --tdp-warning-dark : #D97706;
+  --tdp-light-border: 1px solid #E5E7EB;
+  --tdp-extra-dark: #1F2937;
+  --tdp-dark: #374151;
+  --tdp-text-on-red-background: #DC2626;
+  --tdp-size-xs: 12px;
+  --tdp-size-sm: 14px;
+  --tdp-size-md: 16px;
+  --tdp-size-lg: 18px;
+  --tdp-size-xl: 24px;
+  /*
+    Extra variables to ease customisation
+  */
+  /* Background colors - Banking Theme */
+  --tdp-nav-bg-color: #1E3A8A;
+  --tdp-body-bg-color: #F9FAFB;
+  --tdp-tab-active: #E5E7EB;
+  --tdp-light-green: #D1FAE5;
+  --tdp-light-red: #FEE2E2;
+  --tdp-login-form: #F3F4F6D9;
+  /* Text colors - Professional Banking */
+  --tdp-text-color: #374151;
+  --tdp-link-color: #1E3A8A;
+  --tdp-nav-link-color: white;
+  --tdb-text-color-dark: #1F2937;
+  --tdp-text-color-extra-dark: #111827;
+  --tdb-text-color-gray: #6B7280;
+  --tbd-text-colot-gray-mid: #4B5563;
+  --tdb-text-color-gray-lighter: #9CA3AF;
+  /* Borders - Banking Professional */
+  --tdp-card-border-radius: 8px;
+  --tdp-border-color-on-error: #EF4444;
+  --tdp-table-border-color: #E5E7EB;
+  --tdp-border-radius: 12px;
+  --tdp-login-form-border-radius: 8px;
+  --tdp-primary-border: 1px solid #1F2937;
+  --tdp-form-element-border: 2px solid #D1D5DB;
+  --tpd-gray-200-border: 1px solid #E5E7EB;
+  --tdp-border-graph: 2px solid #F3F4F6;
+  --tdp-analytics-select-border: 2px solid #374151;
+  --tdp-border-green: #10B981;
+  /* Buttons - Banking Theme */
+  --tdp-primary-btn-color: #1E3A8A;
+  --tdp-primary-btn-border: 2px solid #1E3A8A;
+  --tdp-secondary-btn-color: #10B981;
+  --tdp-secondary-btn-border: 2px solid #10B981;
+  --tdp-danger-btn-color: #EF4444;
+  --tdp-danger-btn-border: 2px solid #EF4444;
+  --tdp-danger-outline-btn-border: 2px solid #DC2626;
+  --tdp-warning-btn-color: #F59E0B;
+  --tdp-warning-btn-border: 2px solid #D97706;
+  --tdp-warning-outline-btn-border: 2px solid #F59E0B;
+  --action-brand-default: #1E3A8A;
+  --border-brand-default: #1E40AF;
+  --border-brand-hover: #1D4ED8;
+  --link-default: #2563EB;
+  /* Alert boxes - Banking Professional */
+  --tdp-alert-success-bg-color: #D1FAE5;
+  --tdp-alert-success-border-color: #10B981;
+  --tdp-alert-success-text-color: #065F46;
+  --tdp-alert-info-bg-color: #DBEAFE;
+  --tdp-alert-info-border-color: #3B82F6;
+  --tdp-alert-info-text-color: #1E40AF;
+  --tdp-alert-warning-bg-color: #FEF3C7;
+  --tdp-alert-warning-border-color: #F59E0B;
+  --tdp-alert-warning-text-color: #92400E;
+  --tdp-alert-danger-bg-color: #FEE2E2;
+  --tdp-alert-danger-border-color: #EF4444;
+  --tdp-alert-danger-text-color: #991B1B;
+  /* Icons - Banking Theme */
+  --tdp-icon-success-dark: #059669;
+  --default-border-radius: 12px;
+}
+
+html {
+  scroll-padding-top: 70px;
+}
+
+body {
+  padding-top: 55px;
+  height: 100vh;
+  color: var(--tdp-text-color);
+  background-color: #FFFFFF;
+}
+
+.page-wrapper {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Gradient backgrounds - Banking Professional */
+.dark-to-light-bg {
+  background: linear-gradient(93.59deg, #1E3A8A 19.75%, #3B82F6 81.94%);
+  color: white;
+}
+
+.light-to-dark-bg {
+  background: linear-gradient(93.59deg, #3B82F6 19.75%, #1E3A8A 81.94%);
+  color: white;
+}
+
+.container {
+  max-width: 1230px;
+}
+
+/* Banking Theme Specific Styles */
+.open-banking-compliance {
+  background-color: #F8FAFC;
+  border-radius: var(--tdp-border-radius);
+  margin: 2rem auto;
+  border: 1px solid #E2E8F0;
+  max-width: 1200px;
+  padding: 3rem 2rem;
+}
+
+.open-banking-compliance .row {
+  justify-content: center;
+}
+
+.open-banking-compliance h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.open-banking-compliance .lead {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.compliance-card {
+  background: white;
+  border: var(--tdp-light-border);
+  border-radius: var(--tdp-card-border-radius);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+}
+
+.compliance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+}
+
+.compliance-badge {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid var(--tdp-primary);
+  transition: all 0.2s ease;
+}
+
+.compliance-badge:hover {
+  background-color: var(--tdp-primary) !important;
+  color: white !important;
+}
+
+.compliance-badge:hover h5,
+.compliance-badge:hover small {
+  color: white !important;
+}
+
+.text-primary {
+  color: var(--tdp-primary) !important;
+}
+
+/* Banking Professional Typography */
+.lead {
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--tdp-text-color);
+}
+
+/* Enhanced card styling for banking theme */
+.card {
+  border: var(--tdp-light-border);
+  border-radius: var(--tdp-card-border-radius);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+}
+
+/* API Categories Badges */
+.api-categories-info .badge {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.badge-primary {
+  background-color: var(--tdp-primary);
+  color: white;
+}
+
+.badge-success {
+  background-color: var(--tdp-secondary);
+  color: white;
+}
+
+.badge-warning {
+  background-color: var(--tdp-warning-light);
+  color: var(--tdp-warning-dark);
+}
+
+.badge-info {
+  background-color: var(--tdp-light-blue);
+  color: white;
+}
+
+/* Page title enhancements */
+.page-title-wrapper {
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--tdp-light-border);
+}
+
+.page-title-wrapper h1 {
+  color: var(--tdp-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Banking Icons */
+.banking-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 58, 138, 0.05);
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.banking-icon:hover {
+  transform: scale(1.1);
+  background: rgba(30, 58, 138, 0.1);
+}
+
+.banking-icon svg {
+  transition: transform 0.2s ease;
+}
+
+.banking-icon:hover svg {
+  transform: scale(1.05);
+}

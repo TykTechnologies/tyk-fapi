@@ -1,0 +1,372 @@
+<!-- Template used for the Home page -->
+
+{{ $user := CurrentUser req }}
+
+<div class="home-page-wrapper">
+  <header class="dark-to-light-bg">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="text-container">
+            <h1>{{.page.Title}}</h1>
+            <p>
+            {{if .blocks.HeaderDescription.MarkdownEnabled}}
+              {{safe_md .blocks.HeaderDescription.MarkdownContent}}
+            {{else}}
+              {{safe .blocks.HeaderDescription.Content}}
+            {{end}}
+            </p>
+            <a href="{{.blocks.HeaderButtonLink.Content}}" class="btn btn-primary">{{ safe .blocks.HeaderButtonLabel.Content}}</a>
+          </div>
+        </div>
+        <div class="col-sm-6 image-container" style="background: url('/assets/images/tyk-portal-silhouette.png') no-repeat left center;">
+          {{.blocks.BackgroundImage.Image.URL}}</div>
+      </div>
+    </div>
+  </header>
+
+  {{ if .blocks.UseCasesTitle.Content }}
+    <div class="container text-center use-cases">
+      <h2>{{ safe .blocks.UseCasesTitle.Content}}</h2>
+      <p>
+        {{if .blocks.UseCasesDescription.MarkdownEnabled}}
+          {{ safe_md .blocks.UseCasesDescription.MarkdownContent}}
+        {{else}}
+          {{ safe .blocks.UseCasesDescription.Content}}
+        {{end}}
+      </p>
+      <div class="row">
+        <div class="col-sm-4 mt-4">
+          <div class="banking-icon mb-3 m-auto">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7V10H22V7L12 2Z" fill="#1E3A8A"/>
+              <path d="M4 11V20H7V11H4Z" fill="#10B981"/>
+              <path d="M10 11V20H14V11H10Z" fill="#10B981"/>
+              <path d="M17 11V20H20V11H17Z" fill="#10B981"/>
+              <path d="M2 21H22V22H2V21Z" fill="#1E3A8A"/>
+            </svg>
+          </div>
+          <h3 class="mb-4">{{ safe .blocks.UseCase1Title.Content}}</h3>
+          <p class="pr-3">
+            {{if .blocks.UseCase1Description.MarkdownEnabled}}
+              {{ safe_md .blocks.UseCase1Description.MarkdownContent}}
+            {{else}}
+              {{ safe .blocks.UseCase1Description.Content}}
+            {{end}}
+          </p>
+        </div>
+        <div class="col-sm-4 mt-4">
+          <div class="banking-icon mb-3 m-auto">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#1E3A8A"/>
+              <path d="M4 8H20V10H4V8Z" fill="#10B981"/>
+              <path d="M4 12H12V14H4V12Z" fill="#F59E0B"/>
+              <path d="M16 12H20V14H16V12Z" fill="#F59E0B"/>
+            </svg>
+          </div>
+          <h3 class="mb-4">{{ safe .blocks.UseCase2Title.Content}}</h3>
+          <p class="pr-3">
+            {{if .blocks.UseCase2Description.MarkdownEnabled}}
+              {{ safe_md .blocks.UseCase2Description.MarkdownContent}}
+            {{else}}
+              {{ safe .blocks.UseCase2Description.Content}}
+            {{end}}
+          </p>
+        </div>
+        <div class="col-sm-4 mt-4">
+          <div class="banking-icon mb-3 m-auto">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" fill="#1E3A8A"/>
+              <path d="M9 12L11 14L15 10" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 6V8" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 16V18" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="mb-4">{{ safe .blocks.UseCase3Title.Content}}</h3>
+          <p class="pr-3">
+            {{if .blocks.UseCase3Description.MarkdownEnabled}}
+              {{ safe_md .blocks.UseCase3Description.MarkdownContent}}
+            {{else}}
+              {{ safe .blocks.UseCase3Description.Content}}
+            {{end}}
+          </p>
+        </div>
+      </div>
+    </div>
+  {{end}}
+
+  <!-- Open Banking Compliance Section -->
+  <div class="container text-center py-5 open-banking-compliance">
+    <div class="row">
+      <div class="col-12 mb-5">
+        <h2 class="text-primary">🏛️ UK Open Banking Compliant</h2>
+        <p class="lead">Built for PSD2 regulation and FCA compliance with enterprise-grade security</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <div class="compliance-card p-4 border rounded">
+          <h4 class="text-primary">🔒 PSD2 Compliant</h4>
+          <p>Fully compliant with Payment Services Directive 2 (PSD2) requirements for secure customer authentication and data protection.</p>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="compliance-card p-4 border rounded">
+          <h4 class="text-primary">🏦 FCA Regulated</h4>
+          <p>Meets Financial Conduct Authority standards for open banking services and consumer protection.</p>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="compliance-card p-4 border rounded">
+          <h4 class="text-primary">🛡️ Enterprise Security</h4>
+          <p>Bank-grade security with OAuth 2.0, mutual TLS, and comprehensive audit trails for all API interactions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ if .blocks.FlipFlopRightImageTitle1.Content }}
+    <div class="dark-to-light-bg">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-sm-6">
+            <div class="text-container">
+              <h2>{{ safe .blocks.FlipFlopRightImageTitle1.Content}}</h2>
+              <p>{{ safe .blocks.FlipFlopRightImageSubTitle1.Content}}</p>
+                <div class="step-wrapper">
+                  {{if .blocks.FlipFlopRightImageDescription1.MarkdownEnabled}}
+                    {{safe_md .blocks.FlipFlopRightImageDescription1.MarkdownContent}}
+                  {{else}}
+                    {{safe .blocks.FlipFlopRightImageDescription1.Content}}
+                  {{end}}
+                </div>
+              </div>
+          </div>
+          <div class="col-sm-6 mobile-hide">
+            <div class="row inner-container">
+              <div class="col-sm-6 text-wrapper p-5 content-wrapper">
+                <div class="content-wrapper__content d-block">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle1.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription1.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription1.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription1.Content}}
+                    {{end}}
+                  </p>
+                </div>
+                <div class="content-wrapper__content d-none">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle2.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription2.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription2.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription2.Content}}
+                    {{end}}
+                  </p>
+                </div>
+                <div class="content-wrapper__content d-none">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle3.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription3.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription3.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription3.Content}}
+                    {{end}}
+                  </p>
+                </div>
+                <div class="content-wrapper__content d-none">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle4.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription4.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription4.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription4.Content}}
+                    {{end}}
+                  </p>
+                </div>
+                <div class="content-wrapper__content d-none">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle5.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription5.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription5.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription5.Content}}
+                    {{end}}
+                  </p>
+                </div>
+                <div class="content-wrapper__content d-none">
+                  <h2>{{ safe .blocks.FlipFlopRightImageInnerTitle6.Content}}</h2>
+                  <p>
+                    {{if .blocks.FlipFlopRightImageInnerDescription6.MarkdownEnabled}}
+                      {{ safe_md .blocks.FlipFlopRightImageInnerDescription6.MarkdownContent}}
+                    {{else}}
+                      {{ safe .blocks.FlipFlopRightImageInnerDescription6.Content}}
+                    {{end}}
+                  </p>
+                </div>
+              </div>
+              <div class="col-sm-6 text-right"><img src="/assets/images/request-access.png" alt=""></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{ end }}
+
+  {{ if .blocks.FlipFlopLeftImageTitle1.Content }}
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-6 image-container" style="background: url('/assets/images/about-us.png') no-repeat right center;">{{.blocks.FlipFlopLeftImage1.Image.URL}}</div>
+        <div class="col-sm-6">
+          <div class="row align-items-center my-5">
+            <div class="text-container w-100 text-left">
+              <h2>{{ safe .blocks.FlipFlopLeftImageTitle1.Content}}</h2>
+              <p>
+                {{if .blocks.FlipFlopLeftImageDescription1.MarkdownEnabled}}
+                  {{ safe_md .blocks.FlipFlopLeftImageDescription1.MarkdownContent}}
+                {{else}}
+                  {{ safe .blocks.FlipFlopLeftImageDescription1.Content}}
+                {{end}}
+              </p>
+              <a href="{{.blocks.FlipFlopLeftImageButtonLink1.Content}}" class="btn btn-secondary-outline">{{ safe .blocks.FlipFlopLeftImageButtonLabel1.Content}}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{ end }}
+
+  <!-- Featured APIs -->
+    {{ $featured_products := FeaturedProducts }}
+    {{ if $featured_products }}
+    <div class="row dark-to-light-bg p-5 featured-apis-wrapper">
+      <div class="col-12 text-center text-white mb-5">
+        <h2>{{ safe .blocks.FeaturedProductsTitle.Content}}</h2>
+        <p>
+          {{if .blocks.FeaturedProductsDescription.MarkdownEnabled}}
+            {{ safe_md .blocks.FeaturedProductsDescription.MarkdownContent}}
+          {{else}}
+            {{ safe .blocks.FeaturedProductsDescription.Content}}
+          {{end}}
+        </p>
+      </div>
+      <div class="container">
+        <div class="row justify-content-center">
+          {{ range $featured_products }}
+          {{ $productPath := .Path}}
+          {{ $hasDocs := false }}
+            <div class="col-lg-4 card-container">
+              <div class="card d-flex flex-column {{ if .Logo }}has-logo{{end}}">
+                {{ if .Logo }}
+                  <img class="card-image-border-card-view" src="{{ safe .Logo.URL}}" alt="">
+                {{ end }}
+                <div class="home-card-body align-self-center w-100">
+                  <div class="card-title d-flex flex-column justify-content-end">
+                    <div class="pill-container mb-4 align-self-end">
+                      <div class="pill">{{ .AuthType }} </div>
+                    </div>
+                    <h2>{{ safe .ProductName}}</h2>
+                  </div>
+                  <p class="card-text">{{ .Description }}</p>
+                </div>
+                <div class="home-card-cta d-flex flex-row align-self-center justify-content-between w-100">
+                  <a href="/portal/catalogue-products/{{ .Path }}" class="btn btn-secondary-outline">More Info</a>
+                  <div class="api-product-page__header card__action-buttons d-flex align-self-center">
+                  {{ range .APIDetails }}
+                    {{ $oasfile := gt (.OASDocument.Base.Url | trim | length) 0 }}
+                    {{ $oasurl := gt (.OASUrl | trim | length) 0 }}
+                      {{ if or $oasfile $oasurl }}
+                        {{ $hasDocs = true }}
+                      {{end}}
+                    {{end}}
+                    {{if $hasDocs }}
+                      <div class="dropdown mr-2">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          View Docs
+                        </button>
+                        <div class="view-docs-dropdown dropdown-menu" aria-labelledby="dropdownMenuButton">
+                          {{ range .APIDetails }}
+                            {{ $oasfile := gt (.OASDocument.Base.Url | trim | length) 0 }}
+                            {{ $oasurl := gt (.OASUrl | trim | length) 0 }}
+                            {{ if or $oasfile $oasurl }}
+                              <a href="/portal/catalogue-products/{{$productPath}}/{{ safe .APIID}}/docs" target="_blank">
+                                <p class="docs-link">
+                                  {{ .Name }}
+                                </p>
+                              </a>
+                            {{ end }}
+                          {{ end }}
+                        </div>
+                      </div>
+                    {{end}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </div>
+        <div class="col-12 text-center mt-3">
+          <a href="{{.blocks.FeaturedProductsLink.Content}}" class="btn btn-secondary-outline on-dark">{{ safe .blocks.FeaturedProductsLinkLabel.Content}}</a>
+        </div>
+      </div>
+    </div>
+    {{ else }}
+      {{if $user }}
+        {{ if eq $user.Role "provider-admin"}}
+          <div class="row dark-to-light-bg p-5">
+            <div class="col-md-12 text-center text-white">
+              <h4>There are no featured API products yet</h4>
+              <p>Create a product or mark one as featured</p>
+            </div>
+          </div>
+        {{ end }}
+      {{end}}
+    {{ end }}
+  <!-- end of Featured APIs -->
+
+  <!-- Compliance & Certifications -->
+  <div class="row light-to-dark-bg p-5 partners-wrapper">
+    <div class="col-12 text-center text-white mb-5">
+      <h2>Compliance & Certifications</h2>
+      <p>Tyk Bank is certified and compliant with leading financial regulations and security standards</p>
+    </div>
+    <div class="container mb-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-3 text-center mb-4">
+          <div class="partners-wrapper__image-container p-3">
+            <div class="compliance-badge bg-white rounded p-3">
+              <h5 class="text-dark mb-0">🏦 FCA</h5>
+              <small class="text-muted">Regulated</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 text-center mb-4">
+          <div class="partners-wrapper__image-container p-3">
+            <div class="compliance-badge bg-white rounded p-3">
+              <h5 class="text-dark mb-0">🔒 PSD2</h5>
+              <small class="text-muted">Compliant</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 text-center mb-4">
+          <div class="partners-wrapper__image-container p-3">
+            <div class="compliance-badge bg-white rounded p-3">
+              <h5 class="text-dark mb-0">🛡️ ISO 27001</h5>
+              <small class="text-muted">Certified</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 text-center mb-4">
+          <div class="partners-wrapper__image-container p-3">
+            <div class="compliance-badge bg-white rounded p-3">
+              <h5 class="text-dark mb-0">🔐 GDPR</h5>
+              <small class="text-muted">Compliant</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- end of Partners -->
+</div>
