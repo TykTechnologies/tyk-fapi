@@ -1,8 +1,9 @@
-module github.com/TykTechnologies/tyk-fapi/plugins/tyk-grpc-plugin
+module github.com/TykTechnologies/tyk-fapi/api-management/tyk-grpc-plugin
 
 go 1.24
 
 require (
+	github.com/TykTechnologies/tyk-fapi/plugins/tyk-grpc-plugin v0.0.0-20250604093230-34d8d88a2dd1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.64.0
