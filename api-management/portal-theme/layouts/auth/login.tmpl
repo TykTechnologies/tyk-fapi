@@ -1,0 +1,29 @@
+{{$error := .error}}
+<div class="d-flex flex-column align-items-center justify-content-center flex-grow-1 login-page-wrapper" style="background: url('/assets/images/login.svg') center center no-repeat, linear-gradient(93.59deg, #1E3A8A 19.75%, #3B82F6 81.94%);">
+  <div class="login-form-wrapper p-4">
+    <h2 class="mb-3 text-center">Login to Tyk Bank Developer Portal</h2>
+    <p class="text-center text-muted mb-4">Access secure Open Banking APIs with PSD2 compliance</p>
+    {{ if $error }}
+    <div class="alert alert-danger" role="alert">
+      <i class="tyk-icon tykon tykon-warning "></i>
+      <div class="alert__content">{{ .error }}</div>
+    </div>
+    {{ end }}
+    <form action="login" method="post" class="mb-5">
+      <div class="form-group">
+        <label class="form-label">Business Email Address</label>
+        <input type="email" name="login" class="form-control" placeholder="your.email@company.com" value="" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" placeholder="Enter your secure password" value="" required autocomplete="off" />
+      </div>
+      <div class="form-group mt-4 text-center">
+        <input type="submit" name="submit" class="btn btn-primary" value="Access Banking APIs" />
+      </div>
+      <div class="form-group mt-4 text-center">
+        <a href="/auth/password/update" class="forgot-password breadcrumb-link">Forgot Password?</a>
+      </div>
+    </form>
+  </div>
+</div>

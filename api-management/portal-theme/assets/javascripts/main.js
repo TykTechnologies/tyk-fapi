@@ -128,6 +128,64 @@ dcrTriggers.forEach(t => {
 		templateContent?.classList?.replace(`${shouldShow ? 'd-none' : 'd-block'}`, `${shouldShow ? 'd-block' : 'd-none'}`);
 	})
 })
+
+/* JWKS URI conditional visibility and validation for FAPI 2.0 DCR */
+function initJWKSUriField() {
+	const jwksUriSection = document.getElementById('jwks-uri-section');
+	const jwksUriField = document.getElementById('jwks_uri');
+	const clientTypeRadios = document.querySelectorAll('input[name="app-action-template"]');
+	
+	if (jwksUriSection && jwksUriField && clientTypeRadios.length > 0) {
+		// Function to toggle JWKS URI visibility based on selected client type
+		function toggleJwksUriVisibility() {
+			const selectedRadio = document.querySelector('input[name="app-action-template"]:checked');
+			if (selectedRadio) {
+				const authMethod = selectedRadio.getAttribute('data-auth-method');
+				const requiresJwksUri = authMethod && authMethod.includes('private_key_jwt');
+				
+				if (requiresJwksUri) {
+					jwksUriSection.classList.remove('d-none');
+					jwksUriField.required = true;
+				} else {
+					jwksUriSection.classList.add('d-none');
+					jwksUriField.required = false;
+					jwksUriField.value = ''; // Clear the field when hidden
+				}
+			}
+		}
+		
+		// Add event listeners to all client type radio buttons
+		clientTypeRadios.forEach(radio => {
+			radio.addEventListener('change', toggleJwksUriVisibility);
+		});
+		
+		// Initial check on page load
+		toggleJwksUriVisibility();
+		
+		// Add URL validation
+		jwksUriField.addEventListener('input', function() {
+			const value = this.value.trim();
+			if (value && !isValidUrl(value)) {
+				this.setCustomValidity('Please enter a valid HTTPS URL for your JWKS endpoint');
+			} else {
+				this.setCustomValidity('');
+			}
+		});
+	}
+}
+
+function isValidUrl(string) {
+	try {
+		const url = new URL(string);
+		return url.protocol === 'https:' || url.protocol === 'http:'; // Allow both for demo
+	} catch (_) {
+		return false;
+	}
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initJWKSUriField);
+
 //sidebar active
 let id = "/portal" + window.location.href.split("/portal")[1];
 if (id.includes("users")) {

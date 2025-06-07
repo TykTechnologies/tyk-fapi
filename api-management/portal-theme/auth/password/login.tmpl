@@ -1,0 +1,36 @@
+{{$error := .error}}
+<div class="d-flex flex-column align-items-center justify-content-center flex-grow-1 login-page-wrapper" style="background: url('/assets/images/login.svg') center center no-repeat, linear-gradient(93.59deg, #1E3A8A 19.75%, #3B82F6 81.94%);">
+  <a href="/" class="logo d-flex">
+    <img src="/assets/images/new-logo.svg" alt="Tyk Bank Logo" />
+  </a>
+  <div class="login-form-wrapper">
+    <label class="title-inter login-form-title mt-5">Log in to your Tyk Bank Developer Portal</label>
+    <p class="login-form-subtitle text-muted">Access secure Open Banking APIs with PSD2 compliance</p>
+    {{ if $error }}
+    <div class="alert alert-danger" role="alert">
+      <i class="tyk-icon tykon tykon-warning "></i>
+      <div class="alert__content">{{ .error }}</div>
+    </div>
+    {{ end }}
+    <form action="login" method="post" class="mb-5">
+      <div class="form-group">
+        <label class="form-label login-form-label mb-1">Business Email Address</label>
+        <input type="email" name="login" class="form-control login-form-input" placeholder="your.email@company.com" value="" required />
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label login-form-label mb-1">Password</label>
+        <input type="password" name="password" class="form-control login-form-input" placeholder="Enter your secure password" value="" required autocomplete="off" />
+      </div>
+      <div class="form-group mt-2">
+        <a href="/auth/password/new" class="brand-link login-form-label">Forgot Password?</a>
+      </div>
+      <div class="form-group mt-4 text-center">
+        <input type="submit" name="submit" class="btn portal-primary" value="Access Banking APIs" />
+      </div>
+      <div class="form-group text-center">
+        <span class="login-form-label login-form-info">Don't have an account?</span>
+        <a href="/auth/password/register" class="brand-link login-form-label">Register for banking APIs</a>
+      </div>
+    </form>
+  </div>
+</div>
