@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
   try {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const redirectUri = searchParams.get('redirect_uri') || 'http://localhost:3010/callback';
+    const redirectUri = searchParams.get('redirect_uri') || process.env.NEXT_PUBLIC_REDIRECT_URI;
     const scope = searchParams.get('scope') || 'openid profile';
     const responseType = searchParams.get('response_type') || 'code';
-    const clientId = searchParams.get('client_id') || 'tpp';
+    const clientId = searchParams.get('client_id') || process.env.NEXT_PUBLIC_CLIENT_ID;
     
     // Generate state
     const state = uuidv4();

@@ -2,12 +2,6 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copy go.mod and go.sum
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
 # Copy the source code
 COPY . .
 
@@ -16,9 +10,14 @@ RUN apk add --no-cache protobuf
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 RUN mkdir -p proto/gen
-RUN protoc --go_out=proto/gen --go_opt=paths=source_relative \
-           --go-grpc_out=proto/gen --go-grpc_opt=paths=source_relative \
-           proto/coprocess.proto
+RUN protoc -I=proto \
+            --go_out=proto/gen \
+            --go_opt=paths=source_relative \
+            --go-grpc_out=proto/gen --go-grpc_opt=paths=source_relative \
+            proto/*.proto
+
+RUN go mod tidy
+RUN go mod download
 
 # Build the application
 RUN go build -o tyk-grpc-plugin

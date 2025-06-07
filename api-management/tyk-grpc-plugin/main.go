@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/TykTechnologies/tyk-fapi/plugins/tyk-grpc-plugin/proto/gen"
+	pb "github.com/TykTechnologies/tyk-fapi/api-management/tyk-grpc-plugin/proto/gen"
 	"github.com/golang-jwt/jwt"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

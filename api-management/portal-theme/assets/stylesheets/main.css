@@ -294,3 +294,61 @@ body {
 .banking-icon:hover svg {
   transform: scale(1.05);
 }
+
+/* Auth Templates Banking Styling */
+.login-form-subtitle {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.login-form-wrapper {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--tdp-border-radius);
+  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-form-title {
+  color: var(--tdp-primary);
+  font-weight: 600;
+}
+
+.login-form-1 h3 {
+  color: var(--tdp-primary);
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  color: var(--tdp-text-color);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.btnSubmit {
+  background-color: var(--tdp-primary);
+  border: var(--tdp-primary-btn-border);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: var(--tdp-border-radius);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btnSubmit:hover {
+  background-color: var(--tdp-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+}
+
+.brand-link {
+  color: var(--tdp-primary);
+  text-decoration: none;
+}
+
+.brand-link:hover {
+  color: var(--tdp-primary-dark);
+  text-decoration: underline;
+}

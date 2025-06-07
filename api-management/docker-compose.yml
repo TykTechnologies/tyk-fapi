@@ -1,0 +1,6 @@
+include:
+  - ./jaeger/docker-compose.yml
+  - ./tyk-grpc-plugin/docker-compose.yml
+
+networks:
+  tyk-network: {}

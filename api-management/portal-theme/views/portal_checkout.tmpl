@@ -293,7 +293,7 @@
                           </div>
                           {{end}}
                           <div class="d-flex flex-row mx-n2">
-                            <input id="client-type-{{$index}}" type="radio" name="app-action-template" value="{{ $t.ID }}" {{if eq $templatesLength 1}}checked{{end}}>
+                            <input id="client-type-{{$index}}" type="radio" name="app-action-template" value="{{ $t.ID }}" data-auth-method="{{ if $t.TokenEndpointAuthMethod }}{{ $t.TokenEndpointAuthMethod }}{{ else }}{{ index $t.TokenEndpoints 0 }}{{ end }}" {{if eq $templatesLength 1}}checked{{end}}>
                             <label for="client-type-{{$index}}" class="form-check-label mr-3">
                             </label>
                             <div class="d-flex flex-column">
@@ -333,12 +333,24 @@
                         </div>
                       {{ end }}
                     </div>
+                    
+                    <!-- JWKS URI Section for FAPI 2.0 -->
+                    <div class="jwks-uri-section mt-4 d-none" id="jwks-uri-section">
+                      <div class="mb-3">
+                        <label class="form-label">JWKS URI <span class="text-danger">*</span></label>
+                        <input type="url" name="jwks_uri" id="jwks_uri" class="form-control" placeholder="https://your-domain.com/.well-known/jwks.json"/>
+                        <small class="form-text text-muted">
+                          <i class="tyk-icon tykon tykon-info"></i>
+                          Provide the URL where your JSON Web Key Set (JWKS) is hosted. This is required for FAPI 2.0 authentication with private_key_jwt.
+                        </small>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             {{ end }}
 
-            <div class="text-center mt-4 mb-5">
+           <div class="text-center mt-4 mb-5">
               {{ if $request.Products }}
                 <button type="submit" class="btn btn-primary">Submit request</button>
               {{ end}}

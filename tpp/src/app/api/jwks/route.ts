@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * JWKS endpoint to expose the public key for Keycloak
- * This endpoint will be available at http://localhost:3010/api/jwks
+ * This endpoint will be available at /api/jwks
  */
 export async function GET() {
   try {

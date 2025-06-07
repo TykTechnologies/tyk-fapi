@@ -1,0 +1,62 @@
+<div class="container login-container">
+    <div class="row">
+        <div class="col-md-3 "></div>
+        <div class="col-md-6 login-form-1">
+            <h3>Register for Tyk Bank Developer Portal</h3>
+            <p class="text-muted mb-4">Get access to secure Open Banking APIs with PSD2 compliance. All registrations require KYC verification.</p>
+            {{ if .pending }}
+                <div class="alert alert-info" role="alert">
+                    <i class="tyk-icon tykon tykon-warning "></i>
+                    <div class="alert__content">Your registration request has been submitted for compliance review. You'll receive an email once your KYC verification is complete and access is approved.</div>
+                </div>
+            {{ else }}
+            <form action="/auth/password/register" method="post">
+                {{ if .errors }}
+                    {{ range $field, $errs := .errors }}
+                        {{ range $errs }}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="tyk-icon tykon tykon-warning "></i>
+                                <div class="alert__content">{{.}}</div>
+                            </div>
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+                <div class="form-group">
+                    <label class="form-label">Company/Organisation Name</label>
+                    <input type="text" name="org_name" class="form-control" placeholder="Financial institution or company name *" value="" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Business Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="your.email@company.com *" value="" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first" class="form-control" placeholder="First name *" value="" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last" class="form-control" placeholder="Last name *" value="" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Secure Password</label>
+                    <input type="password" name="password1" class="form-control" placeholder="Create a strong password *" value="" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" name="password2" class="form-control" placeholder="Confirm your password *" value="" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <input type="submit" name="submit" class="btnSubmit" value="Register for Banking APIs" />
+                </div>
+                <div class="form-group">
+                    <p class="text-muted small">By registering, you agree to comply with PSD2 regulations and FCA requirements for Open Banking services.</p>
+                </div>
+                <div class="form-group">
+                    <a href="/auth/password/login">Already have an account? Sign in to access your banking APIs</a>
+                </div>
+            </form>
+            {{ end }}
+        </div>
+        <div class="col-md-3"></div>
+    </div>
+</div>

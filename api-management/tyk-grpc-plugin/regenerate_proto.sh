@@ -12,8 +12,9 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
 # Generate the protobuf code
-protoc --go_out=proto/gen --go_opt=paths=source_relative \
-       --go-grpc_out=proto/gen --go-grpc_opt=paths=source_relative \
-       proto/coprocess.proto
+protoc -I=proto \
+        --go_out=proto/gen --go_opt=paths=source_relative \
+        --go-grpc_out=proto/gen --go-grpc_opt=paths=source_relative \
+        proto/*.proto
 
 echo "Proto files regenerated successfully!"

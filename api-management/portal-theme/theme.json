@@ -1,8 +1,8 @@
 {
     "name": "bank",
     "version": "1.0.0",
-    "author": "Tyk Bank <developers@tykbank.com>",
-    "description": "Professional ASPSP developer portal theme for Open Banking APIs with PSD2 compliance",
+    "author": "Tyk Bank <ahmet@tyk.io>",
+    "description": "ASPSP developer portal theme for Open Banking APIs with FAPI 2.0 compliance",
     "templates": [
         {
             "name": "Flip Flop",
