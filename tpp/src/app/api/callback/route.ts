@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
     
     // Use the same redirect URI as the PAR request, including the consent ID if present
     const redirectUri = consentId
-      ? `http://localhost:3010/callback?consentId=${consentId}`
-      : 'http://localhost:3010/callback';
+      ? `${process.env.NEXT_PUBLIC_REDIRECT_URI}?consentId=${consentId}`
+      : `${process.env.NEXT_PUBLIC_REDIRECT_URI}`;
     console.log('API Callback - Using redirect URI:', redirectUri);
     
     // Exchange authorization code for tokens
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         code,
         redirect_uri: redirectUri,
         code_verifier: codeVerifier,
-        client_id: 'tpp',
+        client_id: process.env.NEXT_PUBLIC_CLIENT_ID || '',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
         client_assertion: clientAssertion
       })

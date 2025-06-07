@@ -2,17 +2,20 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { isAuthenticated as checkAuth } from '@/lib/client/auth';
+import {toast} from "sonner";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   checkAuthStatus: () => Promise<void>;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   checkAuthStatus: async () => {},
+  setIsAuthenticated: () => {},
 });
 
 /**
@@ -37,6 +40,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       const authenticated = await checkAuth();
       setIsAuthenticated(authenticated);
+
+      if (!authenticated && isAuthenticated) {
+        toast.error('Your session has expired. Please log in again.');
+      }
     } catch (error) {
       console.error('Auth check error:', error);
       setIsAuthenticated(false);
@@ -55,6 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isAuthenticated,
         isLoading,
         checkAuthStatus,
+        setIsAuthenticated,
       }}
     >
       {children}

@@ -184,7 +184,7 @@ export async function GET(
     const state = consentId;
     
     // Define the redirect URI
-    const redirectUri = `http://localhost:3010/callback?consentId=${consentId}`;
+    const redirectUri = `${process.env.NEXT_PUBLIC_REDIRECT_URI}?consentId=${consentId}`;
     
     // Generate PKCE code verifier and challenge
     const codeVerifier = generateCodeVerifier();
@@ -214,7 +214,7 @@ export async function GET(
         'DPoP': dpopProof
       },
       body: new URLSearchParams({
-        client_id: 'tpp',
+        client_id: process.env.NEXT_PUBLIC_CLIENT_ID || '',
         response_type: 'code',
         scope: `openid profile payments payment-consent`, // Include payment-consent scope for this flow
         redirect_uri: redirectUri,
@@ -256,7 +256,7 @@ export async function GET(
     // Build authorization URL with request_uri
     const authorizationUrl = `${AUTHORIZATION_ENDPOINT}?` +
       new URLSearchParams({
-        client_id: 'tpp',
+        client_id: process.env.NEXT_PUBLIC_CLIENT_ID || '',
         request_uri: parData.request_uri
       }).toString();
     

@@ -110,8 +110,8 @@ export async function generateClientAssertion(audience: string) {
   const kid = await jose.calculateJwkThumbprint(jwk);
   
   const payload = {
-    iss: 'tpp',
-    sub: 'tpp',
+    iss: process.env.NEXT_PUBLIC_CLIENT_ID,
+    sub: process.env.NEXT_PUBLIC_CLIENT_ID,
     aud: audience,
     jti: uuidv4(),
     iat: Math.floor(Date.now() / 1000),

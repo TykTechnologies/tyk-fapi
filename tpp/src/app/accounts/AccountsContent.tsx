@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithAuth } from '@/lib/client/auth';
 import Link from 'next/link';
+import {useRouter} from "next/navigation";
+import {useAuth} from "@/components/auth";
 
 interface Account {
   id: string;
@@ -72,6 +74,8 @@ export function AccountsContent() {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const dataFetchedRef = useRef(false);
+  const router = useRouter();
+  const auth = useAuth();
 
   useEffect(() => {
     // Skip the second fetch call in StrictMode
@@ -90,6 +94,11 @@ export function AccountsContent() {
         const accountsResponse = await fetchWithAuth('/api/accounts');
         
         if (!accountsResponse.ok) {
+          if (accountsResponse.status === 401) {
+            auth.setIsAuthenticated(false);
+            router.push('/');
+            return;
+          }
           throw new Error('Failed to fetch accounts');
         }
 
@@ -199,12 +208,12 @@ export function AccountsContent() {
     setSelectedAccount(null);
   };
 
-  const handleMakePayment = (accountId: string) => {
-    // Store the account ID in localStorage for the payment flow
-    localStorage.setItem('sourceAccountId', accountId);
-    // Redirect to the payments page
-    window.location.href = '/payments';
-  };
+  // const handleMakePayment = (accountId: string) => {
+  //   // Store the account ID in localStorage for the payment flow
+  //   localStorage.setItem('sourceAccountId', accountId);
+  //   // Redirect to the payments page
+  //   window.location.href = '/payments';
+  // };
 
   if (isLoading) {
     return (

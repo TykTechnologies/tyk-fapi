@@ -15,14 +15,13 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     const {
-      redirectUri = 'http://localhost:3010/callback',
       scope = 'openid profile',
       responseType = 'code',
-      clientId = 'tpp'
+      clientId = process.env.NEXT_PUBLIC_CLIENT_ID || '',
     } = body;
     
     // Use the API callback endpoint as the redirect URI
-    const apiRedirectUri = 'http://localhost:3010/callback';
+    const apiRedirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI;
     
     // Generate state
     const state = uuidv4();
@@ -86,8 +85,9 @@ export async function POST(request: NextRequest) {
       let errorData;
       try {
         errorData = JSON.parse(errorText);
-      } catch (e) {
+      } catch (error) {
         errorData = { text: errorText };
+        console.log('Failed to parse PAR error response:', error);
       }
       
       console.error('PAR endpoint error details:', {
